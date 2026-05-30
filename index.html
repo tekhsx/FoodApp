@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FoodApp - Delivery Menu</title>
+    <meta name="theme-color" content="#ef4444">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/ef4444/ffffff?text=FA">
+    <!-- Phosphor Icons para iconos modernos -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js para la gráfica del Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SDK de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Variables y Tema */
+        :root {
+            --bg-color: #f3f4f6;
+            --surface-color: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --primary: #ef4444;
+            --primary-hover: #dc2626;
+            --border: #e5e7eb;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 16px;
+        }
+
+        body.dark-mode {
+            --bg-color: #111827;
+            --surface-color: #1f2937;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+        }
+
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden; /* Prevent body scroll, handle inside app-container */
+        }
+
+        /* App Container (Mobile Simulator) */
+        .app-container {
+            max-width: 480px;
+            margin: 0 auto;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport */
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--surface-color);
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-actions button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .header-actions button:hover {
+            background-color: var(--border);
+        }
+
+        /* Search Bar */
+        .search-container {
+            padding: 1rem;
+            background-color: var(--surface-color);
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-color);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            gap: 0.5rem;
+            border: 1px solid var(--border);
+        }
+        .search-bar input {
+            border: none;
+            background: none;
+            outline: none;
+            width: 100%;
+            color: var(--text-main);
+            font-size: 1rem;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 60px;
+            scroll-behavior: smooth;
+        }
+        .main-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Resaltado de Producto desde el Banner */
+        @keyframes highlightPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); border-color: var(--primary); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); border-color: var(--primary); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: var(--border); }
+        }
+        .highlighted-card {
+            animation: highlightPulse 2s ease-out;
+            border-color: var(--primary) !important;
+            transform: scale(1.02);
+            transition: transform 0.3s ease;
+        }
+
+        /* Animación para la campanita */
+        @keyframes shakeBell {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(15deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* Animación para cargar (Spinner) */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        /* Animación de respiración para pedido "En Proceso" */
+        @keyframes breatheProcess {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); border-color: rgba(59, 130, 246, 0.8); }
+            50% { box-shadow: 0 0 15px 4px rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); border-color: rgba(59, 130, 246, 0.8); }
+        }
+
+        /* Cronómetro En Proceso */
+        .order-timer {
+            background-color: #e0f2fe;
+            color: #0284c7;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Carousel & Banner */
+        .carousel-container {
+            padding: 1rem 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .carousel-track {
+            display: flex;
+            width: 100%;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+        }
+        .carousel-track::-webkit-scrollbar {
+            display: none;
+        }
+        .banner {
+            min-width: 90%;
+            margin: 0 5%;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 180px;
+            scroll-snap-align: center;
+        }
+        .banner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 0;
+        }
+        .banner-content {
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .banner-subtitle {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.25rem;
+            color: #fca5a5;
+            font-weight: bold;
+        }
+        .banner h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        /* Precio en el Banner */
+        .banner-price {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.2rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Sections */
+        .section-title {
+            padding: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Categories (Horizontal Scroll) */
+        .categories-wrapper {
+            display: flex;
+            overflow-x: auto;
+            padding: 0 1rem 1rem;
+            gap: 0.75rem;
+            scroll-snap-type: x mandatory;
+        }
+        .categories-wrapper::-webkit-scrollbar { display: none; }
+        .category-chip {
+            padding: 0.5rem 1rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            white-space: nowrap;
+            font-weight: 500;
+            color: var(--text-main);
+            scroll-snap-align: start;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .category-chip.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Product Grid */
+        .product-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            padding: 0 1rem 1rem;
+        }
+        
+        /* Product List */
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 0 1rem 1rem;
+        }
+
+        .product-card {
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .product-list .product-card {
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .product-img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            background-color: var(--border);
+        }
+
+        .product-list .product-img {
+            width: 80px;
+            height: 80px;
+        }
+
+        .promo-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 0.2rem 0.5rem;
+            border-radius: 8px;
+            z-index: 2;
+        }
+
+        .product-info {
+            padding: 0.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-name {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        .product-desc {
+            display: none;
+        }
+        .product-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+        .product-price {
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+        .price-container {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .old-price {
+            text-decoration: line-through;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-right: 0.3rem;
+            font-weight: normal;
+        }
+        .add-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .add-btn:active { transform: scale(0.9); }
+
+        /* Cart View Specifics */
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .cart-qty-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .cart-summary {
+            padding: 1.5rem 1rem;
+            background-color: var(--surface-color);
+            border-top: 1px solid var(--border);
+            margin-top: 1rem;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+        .summary-total {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-main);
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed var(--border);
+        }
+        .checkout-btn {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        /* Admin Specifics */
+        .admin-card {
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin: 0 1rem 1rem;
+            border: 1px solid var(--border);
+        }
+        .admin-input {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-main);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .stat-box {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            border: 1px solid var(--border);
+        }
+
+        /* Dashboard Stats */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            padding: 0 1rem 1rem;
+        }
+        .stat-card {
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .stat-icon {
+            font-size: 1.5rem;
+            color: var(--primary);
+            background: var(--bg-color);
+            width: max-content;
+            padding: 0.5rem;
+            border-radius: 10px;
+        }
+        .stat-info p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.2;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .stat-info h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            word-break: break-word;
+        }
+        .chart-wrapper {
+            background: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin: 0 1rem 1rem;
+            padding: 1rem;
+        }
+        .chart-wrapper h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+        .canvas-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+
+        /* Admin Sub-view Headers */
+        .back-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background-color: var(--surface-color);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            cursor: pointer;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            padding: 0.2rem;
+            transition: transform 0.2s;
+        }
+        .back-btn:active { transform: scale(0.9); }
+        .back-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        /* Admin Menu Cards */
+        .admin-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.75rem;
+            padding: 0 1rem 1rem;
+        }
+        .admin-menu-card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-sm);
+        }
+        .admin-menu-card:active {
+            transform: scale(0.95);
+        }
+        .admin-menu-card.active {
+            background-color: rgba(239, 68, 68, 0.05);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        }
+        .admin-menu-card i {
+            font-size: 1.8rem;
+        }
+        .admin-menu-card span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .admin-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .admin-tab-content.active {
+            display: block;
+        }
+
+        /* TV Mode Specifics */
+        .tv-mode-wrapper {
+            background-color: var(--bg-color);
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        .tv-mode-wrapper .add-btn {
+            display: none; /* Ocultar botón de agregar en modo TV */
+        }
+        
+        /* Estilos cuando se activa la Pantalla Completa (Fullscreen API) */
+        .tv-mode-wrapper:fullscreen {
+            background-color: var(--bg-color);
+            padding: 2rem;
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .tv-mode-wrapper:fullscreen .tv-grid {
+            /* Tarjetas más abundantes y compactas en la TV */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 1.5rem;
+        }
+        .tv-mode-wrapper:fullscreen .tv-title {
+            font-size: 2.5rem;
+            padding: 1.5rem 0 1rem;
+            flex-shrink: 0;
+        }
+        .tv-mode-wrapper:fullscreen .tv-carousel-container {
+             height: 40vh;
+             min-height: 40vh;
+             flex-shrink: 0; /* Evita que el flexbox aplaste el carrusel a 0px */
+             padding: 0;
+             margin-bottom: 2rem;
+        }
+        .tv-mode-wrapper:fullscreen .carousel-track {
+             height: 100%; 
+        }
+        .tv-mode-wrapper:fullscreen .banner {
+             height: 100%;
+             margin: 0 1%;
+             min-width: 98%;
+             border-radius: 24px;
+        }
+        .tv-mode-wrapper:fullscreen .banner h3 {
+             font-size: 4rem;
+        }
+        .tv-mode-wrapper:fullscreen .banner-subtitle {
+             font-size: 1.5rem;
+        }
+        .tv-mode-wrapper:fullscreen .banner-price {
+             font-size: 2.5rem;
+             padding: 0.5rem 1.5rem;
+             border-radius: 30px;
+             margin-top: 1rem;
+        }
+        .tv-mode-wrapper:fullscreen .product-card {
+            border-radius: 16px;
+        }
+        .tv-mode-wrapper:fullscreen .product-img {
+            height: 150px;
+        }
+        .tv-mode-wrapper:fullscreen .product-name {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+            white-space: normal; /* En la TV si permitimos que baje de línea */
+        }
+        .tv-mode-wrapper:fullscreen .product-price {
+            font-size: 1.4rem;
+        }
+        .tv-mode-wrapper:fullscreen .old-price {
+            font-size: 1rem;
+        }
+
+        /* Order Cards */
+        .order-card {
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        
+        /* Bordes dinámicos según estado */
+        .border-Pendiente { border-color: #facc15 !important; }
+        .border-En-Proceso { 
+            border-color: #3b82f6 !important; 
+            animation: breatheProcess 2s infinite ease-in-out;
+        }
+        .border-Completado { 
+            border-color: #22c55e !important; 
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.2); 
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        .order-status {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .status-Pendiente { background-color: #fef08a; color: #854d0e; }
+        .status-En-Proceso { background-color: #bfdbfe; color: #1e3a8a; }
+        .status-Completado { background-color: #bbf7d0; color: #166534; }
+        .order-items {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .btn-status {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: white;
+            transition: transform 0.1s;
+        }
+        .btn-status:active { transform: scale(0.95); }
+        .btn-status.process { background-color: #3b82f6; }
+        .btn-status.complete { background-color: #22c55e; }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--surface-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.4rem 0; 
+            padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
+            border-top: 1px solid var(--border);
+            z-index: 20;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.7rem; 
+            gap: 0.15rem; 
+            cursor: pointer;
+            position: relative;
+        }
+        .nav-item.active {
+            color: var(--primary);
+        }
+        .nav-icon { font-size: 1.3rem; } 
+        
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--surface-color);
+        }
+
+        /* Floating Cart Button */
+        .floating-cart {
+            position: absolute;
+            bottom: 65px; 
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            cursor: pointer;
+            z-index: 15;
+            transition: transform 0.2s;
+        }
+        .floating-cart:active { transform: scale(0.9); }
+        .floating-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: white;
+            color: var(--primary);
+            font-size: 0.75rem;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+            height: 100%;
+        }
+        .empty-state i { font-size: 4rem; margin-bottom: 1rem; color: var(--border); }
+
+        /* Auth View */
+        .auth-container {
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 80vh;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .auth-form {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .auth-toggle {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Modal simple para notificaciones */
+        #toast {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 100;
+            display: none;
+            white-space: nowrap;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <div id="toast">Notificación</div>
+
+    <header>
+        <div class="logo">
+            <i class="ph-fill ph-hamburger"></i> FoodApp
+        </div>
+        <div class="header-actions">
+            <button id="logoutBtn" onclick="logout()" style="display: none;"><i class="ph ph-sign-out"></i></button>
+            <button id="themeToggle" onclick="toggleTheme()"><i class="ph ph-moon"></i></button>
+        </div>
+    </header>
+
+    <main class="main-content" id="mainContent">
+        
+        <!-- ================= LOGIN VIEW ================= -->
+        <section id="view-login" class="view">
+            <div class="auth-container">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <i class="ph-fill ph-hamburger" style="font-size: 4rem; color: var(--primary);"></i>
+                    <h2 style="margin-top: 0.5rem; color: var(--text-main);">Bienvenido a FoodApp</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem;" id="authSubtitle">Inicia sesión para continuar</p>
+                </div>
+                
+                <!-- Formulario de Login -->
+                <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Correo Electrónico</label>
+                        <input type="email" id="loginEmail" class="admin-input" placeholder="tes@hsx.com" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Contraseña</label>
+                        <input type="password" id="loginPassword" class="admin-input" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="checkout-btn" style="margin-top: 0;">Iniciar Sesión</button>
+                    <div class="auth-toggle" onclick="toggleAuthMode('register')">¿No tienes cuenta? Regístrate</div>
+                </form>
+
+                <!-- Formulario de Registro -->
+                <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)" style="display: none;">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Nombre Completo</label>
+                        <input type="text" id="regName" class="admin-input" placeholder="Juan Pérez" required>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Número de Celular</label>
+                        <input type="tel" id="regPhone" class="admin-input" placeholder="6000-0000" required>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Correo Electrónico</label>
+                        <input type="email" id="regEmail" class="admin-input" placeholder="correo@ejemplo.com" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-size: 0.8rem; color: var(--text-muted);">Contraseña</label>
+                        <input type="password" id="regPassword" class="admin-input" placeholder="Crea una contraseña" required>
+                    </div>
+                    <button type="submit" class="checkout-btn" style="margin-top: 0;">Crear Cuenta</button>
+                    <div class="auth-toggle" onclick="toggleAuthMode('login')">¿Ya tienes cuenta? Inicia Sesión</div>
+                </form>
+
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">¿Solo quieres pedir comida?</p>
+                    <button type="button" class="admin-tab-btn" style="width: 100%; padding: 0.8rem;" onclick="loginAsGuest()">Continuar como Cliente (Sin Cuenta)</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= HOME VIEW ================= -->
+        <section id="view-home" class="view">
+            <div class="carousel-container">
+                <div class="carousel-track" id="carouselTrack">
+                    <!-- Banners dinámicos -->
+                </div>
+            </div>
+
+            <div class="categories-wrapper" id="homeCategories">
+                <!-- Categorías dinámicas -->
+            </div>
+
+            <h2 class="section-title">Promociones Activas <i class="ph-fill ph-fire" style="color: var(--primary)"></i></h2>
+            <div class="product-grid" id="promoGrid">
+                <!-- Productos Promo -->
+            </div>
+
+            <h2 class="section-title">Los Más Pedidos</h2>
+            <div class="product-grid" id="topOrdersGrid">
+                <!-- Top Productos -->
+            </div>
+        </section>
+
+        <!-- ================= MENU VIEW ================= -->
+        <section id="view-menu" class="view">
+            <div class="search-container">
+                <div class="search-bar">
+                    <i class="ph ph-magnifying-glass text-muted"></i>
+                    <input type="text" placeholder="¿Qué se te antoja hoy?" id="searchInput" oninput="handleSearch(this.value)">
+                </div>
+            </div>
+            <h2 class="section-title">Menú Completo</h2>
+            <div class="categories-wrapper" id="menuCategories">
+                <!-- Categorías -->
+            </div>
+            <div class="product-list" id="fullMenuGrid">
+                <!-- Todo el menú -->
+            </div>
+        </section>
+
+        <!-- ================= CART VIEW ================= -->
+        <section id="view-cart" class="view">
+            <h2 class="section-title">Mi Pedido</h2>
+            <div id="cartItemsContainer" class="product-list">
+                <!-- Items del carrito -->
+            </div>
+            <div id="cartSummary" class="cart-summary" style="display: none;">
+                <div class="summary-total summary-row" style="border-top: none; margin-top: 0; padding-top: 0;">
+                    <span>Total</span>
+                    <span id="cartTotal">$0.00</span>
+                </div>
+                <button class="checkout-btn" onclick="checkout()">Confirmar Pedido</button>
+            </div>
+            <div id="emptyCartState" class="empty-state">
+                <i class="ph ph-shopping-bag-open"></i>
+                <h3>Tu carrito está vacío</h3>
+                <p>¡Agrega algo delicioso del menú!</p>
+            </div>
+        </section>
+
+        <!-- ================= MY ORDERS VIEW (USER) ================= -->
+        <section id="view-my-orders" class="view">
+            <h2 class="section-title">Estado de mis Pedidos</h2>
+
+            <div id="userOrdersList" style="padding: 0 1rem;">
+                <!-- Lista de pedidos del usuario -->
+            </div>
+        </section>
+
+        <!-- ================= ADMIN VIEW (MAIN MENU) ================= -->
+        <section id="view-admin" class="view">
+            <h2 class="section-title">Panel Administrativo</h2>
+            
+            <div class="admin-menu-grid">
+                <div class="admin-menu-card" onclick="navigate('admin-stats')">
+                    <i class="ph-fill ph-chart-pie-slice"></i>
+                    <span>Resumen</span>
+                </div>
+                <div class="admin-menu-card" onclick="navigate('admin-orders')" style="position: relative;">
+                    <i class="ph-fill ph-receipt"></i>
+                    <span>Pedidos</span>
+                    <!-- Campanita de notificaciones para Admin -->
+                    <div class="cart-badge" id="adminOrdersBadge" style="display:none; background-color: #ef4444; width: 22px; height: 22px;">
+                        <i class="ph-fill ph-bell-ringing" style="font-size: 0.8rem; animation: shakeBell 1s ease-in-out infinite;"></i>
+                    </div>
+                </div>
+                <div class="admin-menu-card" onclick="navigate('admin-users')">
+                    <i class="ph-fill ph-users"></i>
+                    <span>Usuarios</span>
+                </div>
+                <div class="admin-menu-card" onclick="navigate('admin-products')">
+                    <i class="ph-fill ph-package"></i>
+                    <span>Productos</span>
+                </div>
+                <div class="admin-menu-card" onclick="navigate('admin-tv')">
+                    <i class="ph-fill ph-monitor-play"></i>
+                    <span>Pantalla TV</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: STATS ================= -->
+        <section id="view-admin-stats" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <h2>Resumen</h2>
+            </div>
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <i class="ph-fill ph-currency-dollar stat-icon"></i>
+                    <div class="stat-info">
+                        <p>Total Ingresos</p>
+                        <h3 id="dashTotalSales">$0.00</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="ph-fill ph-shopping-bag stat-icon"></i>
+                    <div class="stat-info">
+                        <p>Pedidos Totales</p>
+                        <h3 id="dashTotalOrders">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="ph-fill ph-star stat-icon"></i>
+                    <div class="stat-info">
+                        <p>Producto Estrella</p>
+                        <h3 id="dashTopProduct">-</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="ph-fill ph-fire stat-icon"></i>
+                    <div class="stat-info">
+                        <p>Combo Más Vendido</p>
+                        <h3 id="dashTopCombo">-</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-wrapper">
+                <h4>Ventas por Categoría</h4>
+                <div class="canvas-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: ORDERS ================= -->
+        <section id="view-admin-orders" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <h2>Pedidos Activos</h2>
+            </div>
+            <div id="adminOrdersList" style="padding: 0 1rem;">
+                <!-- Lista de pedidos activos -->
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: USERS ================= -->
+        <section id="view-admin-users" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <h2>Usuarios</h2>
+            </div>
+            <div style="padding: 0 1rem;">
+                <h3 class="section-title" style="font-size: 1rem; padding: 0 0 1rem 0;">Registrar Nuevo Usuario</h3>
+                <div class="admin-card" style="margin: 0 0 1.5rem 0;">
+                    <input type="text" id="adminNewUserName" class="admin-input" placeholder="Nombre completo">
+                    <input type="tel" id="adminNewUserPhone" class="admin-input" placeholder="Número de celular">
+                    <input type="email" id="adminNewUserEmail" class="admin-input" placeholder="Correo electrónico">
+                    <input type="text" id="adminNewUserPass" class="admin-input" placeholder="Contraseña temporal">
+                    <button id="btnAdminRegisterUser" class="checkout-btn" style="padding: 0.75rem; margin-top: 1rem; font-size: 1rem;" onclick="adminAddNewUser()">+ Registrar Usuario</button>
+                </div>
+
+                <h3 class="section-title" style="font-size: 1rem; padding: 0 0 1rem 0;">Usuarios Registrados</h3>
+                <div id="adminUsersList" class="product-list" style="padding: 0;">
+                    <!-- Lista de usuarios -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: PRODUCTS MANAGER (NUEVO) ================= -->
+        <section id="view-admin-products" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <h2>Productos</h2>
+            </div>
+            <div style="padding: 0 1rem;">
+                <button class="checkout-btn" style="margin-top: 0; margin-bottom: 1rem;" onclick="openAddProductForm()">+ Nuevo Producto</button>
+                
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="adminProductSearch" class="admin-input" style="margin: 0;" placeholder="Buscar producto..." oninput="renderAdminProducts()">
+                    <select id="adminProductCategory" class="admin-input" style="margin: 0; width: auto;" onchange="renderAdminProducts()">
+                        <option value="Todos">Todas</option>
+                        <option value="Hamburguesas">Hamburguesas</option>
+                        <option value="Pizzas">Pizzas</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Postres">Postres</option>
+                        <option value="Combos">Combos</option>
+                    </select>
+                </div>
+                
+                <div id="adminProductsManagerList" class="product-list" style="padding: 0;">
+                    <!-- Lista de todos los productos -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: ADD/EDIT PRODUCT ================= -->
+        <section id="view-admin-add" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin-products')"><i class="ph ph-arrow-left"></i></button>
+                <h2 id="adminAddHeaderTitle">Nuevo Producto</h2>
+            </div>
+            <div class="admin-card">
+                <input type="text" id="addName" class="admin-input" placeholder="Nombre del producto">
+                <input type="text" id="addDesc" class="admin-input" placeholder="Descripción breve">
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <input type="number" id="addPrice" class="admin-input" placeholder="Precio ($)">
+                    <select id="addCategory" class="admin-input">
+                        <option value="Hamburguesas">Hamburguesas</option>
+                        <option value="Pizzas">Pizzas</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Postres">Postres</option>
+                        <option value="Combos">Combos</option>
+                    </select>
+                </div>
+                
+                <!-- Input para subir imagen desde Galería/Cámara -->
+                <label style="font-size:0.8rem; color:var(--text-muted); margin-top: 1rem; display: block;">Imagen del Producto (Galería o Cámara)</label>
+                <input type="file" id="addImageFile" class="admin-input" accept="image/*" style="margin-top: 0.2rem; padding: 0.5rem; background: var(--surface-color);">
+                
+                <button class="checkout-btn" id="btnAddProduct" style="padding: 0.75rem; margin-top: 1rem; font-size: 1rem;" onclick="addNewProduct()">+ Agregar Producto</button>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN: TV MODE ================= -->
+        <section id="view-admin-tv" class="view">
+            <div class="back-header">
+                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <h2 style="flex: 1;">Menú Digital (TV)</h2>
+                <!-- Botón de FullScreen -->
+                <button class="checkout-btn" style="margin: 0; padding: 0.5rem 1rem; width: auto; font-size: 0.9rem;" onclick="toggleFullScreen('tv-content-wrapper')">
+                    <i class="ph-fill ph-corners-out"></i> Fullscreen
+                </button>
+            </div>
+            
+            <div id="tv-content-wrapper" class="tv-mode-wrapper">
+                <div class="carousel-container tv-carousel-container">
+                    <div class="carousel-track" id="tvCarouselTrack">
+                        <!-- Banners dinámicos TV -->
+                    </div>
+                </div>
+
+                <h2 class="section-title tv-title">Promociones Activas <i class="ph-fill ph-fire" style="color: var(--primary)"></i></h2>
+                <div class="product-grid tv-grid" id="tvPromoGrid">
+                    <!-- Productos Promo TV -->
+                </div>
+
+                <h2 class="section-title tv-title">Los Más Pedidos</h2>
+                <div class="product-grid tv-grid" id="tvTopOrdersGrid">
+                    <!-- Top Productos TV -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Cart -->
+    <div class="floating-cart" id="floatingCart" onclick="navigate('cart')">
+        <i class="ph ph-shopping-cart" style="font-size: 1.8rem"></i>
+        <div class="floating-badge" id="floatingCartBadge">0</div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav" id="bottomNav">
+        <a class="nav-item active" onclick="navigate('home')" id="nav-home">
+            <i class="ph-fill ph-house nav-icon"></i>
+            <span>Inicio</span>
+        </a>
+        <a class="nav-item" onclick="navigate('menu')" id="nav-menu">
+            <i class="ph-fill ph-book-open nav-icon"></i>
+            <span>Menú</span>
+        </a>
+        <a class="nav-item" onclick="navigate('my-orders')" id="nav-my-orders">
+            <i class="ph-fill ph-receipt nav-icon"></i>
+            <span>Mis Pedidos</span>
+            <!-- Campanita tipo notificación App -->
+            <div class="cart-badge" id="navOrdersBadge" style="display:none; background-color: #f59e0b; width: 22px; height: 22px;">
+                <i class="ph-fill ph-bell-ringing" style="font-size: 0.8rem; animation: shakeBell 1s ease-in-out infinite;"></i>
+            </div>
+        </a>
+        <a class="nav-item" onclick="navigate('admin')" id="nav-admin">
+            <i class="ph-fill ph-gear nav-icon"></i>
+            <span>Admin</span>
+        </a>
+    </nav>
+
+</div>
+
+<script>
+    // --- ESTADO Y DATOS DE LA APP ---
+    // Conexión a Supabase
+    const supabaseUrl = 'https://owzdppnomndgrrpnrvnr.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93emRwcG5vbW5kZ3JycG5ydm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDY2OTEsImV4cCI6MjA5NTcyMjY5MX0.l2PWR9F09JOFxpE_Er9gccpbxvIua12et9fZKckiYrc';
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    const categories = ["Todos", "Hamburguesas", "Pizzas", "Bebidas", "Postres", "Combos"];
+    
+    // Usuarios por defecto (El admin siempre existirá en memoria por si falla la red)
+    const defaultUsers = [
+        { name: "Super Admin", phone: "00000000", email: "tes@hsx.com", password: "hsx123", role: "admin", banned: false }
+    ];
+
+    let products = [];
+    let cart = JSON.parse(localStorage.getItem('foodapp_cart')) || [];
+    let orders = []; // Ahora iniciará vacío y se llenará desde Supabase
+    let appUsers = JSON.parse(localStorage.getItem('foodapp_users')) || defaultUsers; 
+    let currentUser = JSON.parse(localStorage.getItem('foodapp_user')) || null;
+    let currentCategory = "Todos";
+    let isDarkMode = localStorage.getItem('foodapp_theme') === 'dark';
+    let salesChartInstance = null; 
+    let editingProductId = null; 
+
+    // --- NUEVO: COMPROBACIÓN LIGERA DE PEDIDOS (POLLING) ---
+    async function pollOrders() {
+        if (!currentUser) return; // Si no hay sesión iniciada, no verificar
+
+        try {
+            // 1. Comprobación Ligera: Solo descargar IDs y Estados (Muy rápido y poco peso)
+            const { data: checkData, error: checkErr } = await supabaseClient
+                .from('orders')
+                .select('id, status');
+
+            if (checkErr) throw checkErr;
+            if (!checkData) return;
+
+            // 2. Comparar con nuestro caché local (orders)
+            let hasChanges = false;
+            
+            // ¿Hay una cantidad diferente de pedidos? (Ej: Entró un pedido nuevo)
+            if (checkData.length !== orders.length) {
+                hasChanges = true;
+            } else {
+                // ¿Algún pedido existente cambió de estado? (Ej: Pendiente -> En Proceso)
+                for (let i = 0; i < checkData.length; i++) {
+                    const newO = checkData[i];
+                    const oldO = orders.find(o => o.id === newO.id);
+                    if (!oldO || oldO.status !== newO.status) {
+                        hasChanges = true;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Si NO hay cambios, detenemos aquí y ahorramos datos de internet.
+            if (!hasChanges) return;
+
+            // 4. SI HAY CAMBIOS: Descargamos la información completa de los pedidos
+            const { data: dbOrders, error: errOrders } = await supabaseClient
+                .from('orders')
+                .select(`
+                    id, total, status, process_start_time, created_at, user_id,
+                    order_items ( product_id, quantity, unit_price, product_name )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (errOrders) throw errOrders;
+
+            if (dbOrders) {
+                const previousPending = orders.filter(o => o.status === 'Pendiente').length;
+                
+                // Actualizar caché de memoria
+                orders = dbOrders.map(o => ({
+                    id: o.id,
+                    userId: o.user_id,
+                    date: new Date(o.created_at).toLocaleString(),
+                    total: parseFloat(o.total),
+                    status: o.status,
+                    processStartTime: o.process_start_time ? parseInt(o.process_start_time) : null,
+                    items: o.order_items.map(i => ({
+                        id: i.product_id,
+                        name: i.product_name,
+                        price: parseFloat(i.unit_price),
+                        qty: i.quantity
+                    }))
+                }));
+
+                const currentPending = orders.filter(o => o.status === 'Pendiente').length;
+
+                // Notificar si es un pedido nuevo (solo para Admin)
+                if (currentPending > previousPending && currentUser?.role === 'admin') {
+                    showToast("🔔 ¡Nuevo pedido recibido!");
+                }
+
+                // Refrescar las vistas que muestran pedidos
+                updateOrdersBadge();
+                if (document.getElementById('view-admin-orders').classList.contains('active')) renderOrdersAdmin();
+                if (document.getElementById('view-my-orders').classList.contains('active')) renderUserOrders();
+                if (document.getElementById('view-admin-stats').classList.contains('active')) renderDashboard();
+            }
+
+        } catch (error) {
+            console.error("Error en comprobación de pedidos en tiempo real:", error);
+        }
+    }
+
+    // --- SINCRONIZACIÓN MAESTRA CON SUPABASE ---
+    async function syncConSupabase() {
+        try {
+            console.log("Conectando con Supabase para sincronizar datos...");
+            
+            // 1. Obtener Productos
+            const { data: dbProducts, error: errProd } = await supabaseClient.from('products').select('*');
+            if (dbProducts) {
+                products = dbProducts.map(p => ({
+                    id: p.id, name: p.name, desc: p.description, price: parseFloat(p.price),
+                    oldPrice: p.old_price ? parseFloat(p.old_price) : null, category: p.category,
+                    image: p.image, active: p.active, orders: p.orders_count, promo: p.promo,
+                    promoStart: p.promo_start, promoEnd: p.promo_end
+                }));
+            }
+
+            // 2. Obtener Usuarios
+            const { data: dbUsers, error: errUsers } = await supabaseClient.from('users').select('*');
+            if (dbUsers) {
+                appUsers = dbUsers.map(u => ({
+                    id: u.id, name: u.name, phone: u.phone, email: u.email, 
+                    password: u.password, role: u.role, banned: u.banned
+                }));
+            }
+
+            // 3. Obtener Pedidos y sus items correspondientes
+            const { data: dbOrders, error: errOrders } = await supabaseClient
+                .from('orders')
+                .select(`
+                    id, total, status, process_start_time, created_at, user_id,
+                    order_items ( product_id, quantity, unit_price, product_name )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (dbOrders) {
+                orders = dbOrders.map(o => ({
+                    id: o.id,
+                    userId: o.user_id,
+                    date: new Date(o.created_at).toLocaleString(),
+                    total: parseFloat(o.total),
+                    status: o.status,
+                    processStartTime: o.process_start_time ? parseInt(o.process_start_time) : null,
+                    items: o.order_items.map(i => ({
+                        id: i.product_id,
+                        name: i.product_name,
+                        price: parseFloat(i.unit_price),
+                        qty: i.quantity
+                    }))
+                }));
+            }
+
+            // Refrescar toda la interfaz con los datos actualizados
+            renderCategories();
+            renderHomeViews();
+            renderCarousel();
+            updateOrdersBadge();
+            if (document.getElementById('view-admin-tv').classList.contains('active')) renderTvView();
+            if (document.getElementById('view-menu').classList.contains('active')) renderFullMenu();
+            if (document.getElementById('view-admin-orders').classList.contains('active')) renderOrdersAdmin();
+            if (document.getElementById('view-admin-stats').classList.contains('active')) renderDashboard();
+            if (document.getElementById('view-my-orders').classList.contains('active')) renderUserOrders();
+            
+            console.log("¡Sincronización exitosa con Supabase completada!");
+        } catch (error) {
+            console.error("Error crítico al sincronizar con Supabase:", error);
+        }
+    }
+
+    // --- INICIALIZACIÓN ---
+    function init() {
+        if(isDarkMode) document.body.classList.add('dark-mode');
+        updateThemeIcon();
+        
+        if(!currentUser) {
+            navigate('login');
+        } else {
+            setupAndEnterApp();
+        }
+
+        // Ejecutar primera sincronización (Descarga productos, usuarios, etc)
+        syncConSupabase();
+        
+        // Listener MAESTRO para notificaciones cruzadas (entre pestañas/ventanas)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'foodapp_trigger_sync') {
+                // Al detectar que otra pestaña hizo algo, solo ejecutamos la revisión ligera
+                pollOrders(); 
+            }
+        });
+
+        // NUEVO: Intervalo de 10 segundos para verificar pedidos en tiempo real
+        setInterval(pollOrders, 10000);
+
+        // Auto scroll carouseles
+        setInterval(() => {
+            const track = document.getElementById('carouselTrack');
+            if(track && document.getElementById('view-home').classList.contains('active')) {
+                const scrollAmount = track.clientWidth;
+                if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 10) track.scrollTo({ left: 0, behavior: 'smooth' });
+                else track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+
+            const tvTrack = document.getElementById('tvCarouselTrack');
+            if(tvTrack && document.getElementById('view-admin-tv').classList.contains('active')) {
+                const scrollAmount = tvTrack.clientWidth;
+                if (tvTrack.scrollLeft + tvTrack.clientWidth >= tvTrack.scrollWidth - 10) tvTrack.scrollTo({ left: 0, behavior: 'smooth' });
+                else tvTrack.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            }
+        }, 10000);
+
+        // Cronómetros En Proceso
+        setInterval(() => {
+            document.querySelectorAll('.order-timer').forEach(timerEl => {
+                const startTime = parseInt(timerEl.getAttribute('data-start-time'));
+                if(startTime) {
+                    const diffSeconds = Math.floor((Date.now() - startTime) / 1000);
+                    const m = Math.floor(diffSeconds / 60).toString().padStart(2, '0');
+                    const s = (diffSeconds % 60).toString().padStart(2, '0');
+                    const textSpan = timerEl.querySelector('.timer-text');
+                    if(textSpan) textSpan.innerText = `${m}:${s}`;
+                }
+            });
+        }, 1000);
+    }
+
+    function saveState() {
+        // Solo guardamos el carrito localmente, el resto ya es en la nube
+        localStorage.setItem('foodapp_cart', JSON.stringify(cart));
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    // --- FUNCIONES DE AUTENTICACIÓN DIRECTA A SUPABASE ---
+    function toggleAuthMode(mode) {
+        const loginForm = document.getElementById('loginForm');
+        const regForm = document.getElementById('registerForm');
+        const subtitle = document.getElementById('authSubtitle');
+        
+        if (mode === 'register') {
+            loginForm.style.display = 'none';
+            regForm.style.display = 'block';
+            subtitle.innerText = 'Crea tu cuenta para pedir';
+        } else {
+            loginForm.style.display = 'block';
+            regForm.style.display = 'none';
+            subtitle.innerText = 'Inicia sesión para continuar';
+        }
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPassword').value.trim();
+        const btn = document.querySelector('#loginForm button');
+        
+        btn.disabled = true;
+        btn.innerText = 'Verificando...';
+
+        try {
+            // Leer directo de Supabase
+            const { data: users, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('email', email)
+                .eq('password', pass);
+
+            if (error) throw error;
+
+            if (users && users.length > 0) {
+                const user = users[0];
+                if (user.banned) {
+                    showToast("Tu cuenta ha sido suspendida.");
+                    return;
+                }
+                
+                currentUser = { id: user.id, role: user.role, email: user.email, name: user.name };
+                localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
+                showToast(`Bienvenido ${user.name}`);
+                setupAndEnterApp();
+            } else {
+                showToast("Credenciales incorrectas.");
+            }
+        } catch(err) {
+            console.error(err);
+            showToast("Error de conexión");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Iniciar Sesión';
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const name = document.getElementById('regName').value.trim();
+        const phone = document.getElementById('regPhone').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pass = document.getElementById('regPassword').value.trim();
+        const btn = document.querySelector('#registerForm button');
+
+        btn.disabled = true;
+        btn.innerText = 'Creando cuenta...';
+
+        try {
+            // Verificar si el correo ya existe en BD
+            const { data: existing } = await supabaseClient.from('users').select('id').eq('email', email);
+            if (existing && existing.length > 0) {
+                showToast("Este correo ya está registrado.");
+                return;
+            }
+
+            // Insertar en Supabase
+            const { data: newUser, error } = await supabaseClient.from('users').insert([{ 
+                name: name, phone: phone, email: email, password: pass, role: 'user', banned: false 
+            }]).select();
+
+            if(error) throw error;
+
+            const u = newUser[0];
+            currentUser = { id: u.id, role: u.role, email: u.email, name: u.name };
+            localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
+            
+            showToast("Registro exitoso. ¡Bienvenido!");
+            setupAndEnterApp();
+        } catch(err) {
+            console.error(err);
+            showToast("Error al registrar la cuenta.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Crear Cuenta';
+        }
+    }
+
+    function loginAsGuest() {
+        currentUser = { id: null, role: 'user', email: 'cliente', name: 'Invitado' };
+        localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
+        showToast("Bienvenido a FoodApp");
+        setupAndEnterApp();
+    }
+
+    function setupAndEnterApp() {
+        const adminNav = document.getElementById('nav-admin');
+        const logoutBtn = document.getElementById('logoutBtn');
+        
+        if(currentUser?.role === 'admin') adminNav.style.display = 'flex';
+        else adminNav.style.display = 'none';
+        
+        logoutBtn.style.display = 'inline-block';
+        
+        renderCarousel();
+        renderCategories();
+        renderHomeViews();
+        updateCartBadge();
+        updateOrdersBadge(); 
+        
+        if(currentUser?.role === 'admin') navigate('admin');
+        else navigate('home');
+    }
+
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem('foodapp_user');
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        navigate('login');
+        showToast("Sesión cerrada");
+    }
+
+    function navigate(viewName) {
+        if(viewName.startsWith('admin') && currentUser?.role !== 'admin') {
+            showToast("Acceso denegado");
+            return;
+        }
+
+        const bottomNav = document.getElementById('bottomNav');
+        if(bottomNav) bottomNav.style.display = viewName === 'login' ? 'none' : 'flex';
+
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        const targetView = document.getElementById(`view-${viewName}`);
+        if(targetView) targetView.classList.add('active');
+        
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const navId = viewName.startsWith('admin') ? 'nav-admin' : `nav-${viewName}`;
+        const navIcon = document.getElementById(navId);
+        if(navIcon) navIcon.classList.add('active');
+
+        if(!window.preventAutoScroll) document.getElementById('mainContent').scrollTop = 0;
+        window.preventAutoScroll = false;
+
+        if(viewName === 'menu') renderFullMenu();
+        if(viewName === 'cart') renderCart();
+        if(viewName === 'admin') renderAdmin();
+        if(viewName === 'home') renderHomeViews();
+        if(viewName === 'my-orders') renderUserOrders();
+        
+        if(viewName === 'admin-stats') renderDashboard();
+        if(viewName === 'admin-orders') renderOrdersAdmin();
+        if(viewName === 'admin-users') renderAdminUsers();
+        if(viewName === 'admin-products') renderAdminProducts(); 
+        if(viewName === 'admin-tv') renderTvView(); 
+    }
+
+    // --- RENDERIZADO UI DE PRODUCTOS ---
+    function getLocalYYYYMMDD() {
+        const date = new Date();
+        const offset = date.getTimezoneOffset();
+        date.setMinutes(date.getMinutes() - offset);
+        return date.toISOString().split('T')[0];
+    }
+
+    function getEffectiveProductData(p) {
+        const today = getLocalYYYYMMDD(); 
+        let isPromo = p.promo;
+        let effectivePrice = p.price;
+        let effectiveOldPrice = p.oldPrice;
+
+        if (p.promo) {
+            if (p.promoStart && today < p.promoStart) {
+                isPromo = false;
+                effectivePrice = p.oldPrice !== null ? p.oldPrice : p.price;
+                effectiveOldPrice = null;
+            }
+            if (p.promoEnd && today > p.promoEnd) {
+                isPromo = false;
+                effectivePrice = p.oldPrice !== null ? p.oldPrice : p.price;
+                effectiveOldPrice = null;
+            }
+        }
+        return { ...p, promo: isPromo, price: effectivePrice, oldPrice: effectiveOldPrice };
+    }
+
+    function generateProductCard(p, context = '') {
+        if (!p.active && !document.getElementById('view-admin').classList.contains('active')) return '';
+        
+        return `
+            <div class="product-card" id="product-${context}-${p.id}">
+                ${p.promo ? '<div class="promo-badge">Promo</div>' : ''}
+                <img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy">
+                <div class="product-info">
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-desc">${p.desc}</div>
+                    <div class="product-footer">
+                        <div class="price-container">
+                            ${p.promo && p.oldPrice ? `<span class="old-price">$${parseFloat(p.oldPrice).toFixed(2)}</span>` : ''}
+                            <span class="product-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+                        </div>
+                        <button class="add-btn" onclick="addToCart(${p.id})"><i class="ph ph-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function goToProduct(productId) {
+        window.preventAutoScroll = true; 
+        navigate('menu');
+        setCategory('Todos');
+        setTimeout(() => {
+            const card = document.getElementById(`product-menu-${productId}`);
+            if(card) {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('highlighted-card');
+                setTimeout(() => card.classList.remove('highlighted-card'), 2000);
+            }
+        }, 150);
+    }
+
+    function renderHomeViews() {
+        const promos = products.map(getEffectiveProductData).filter(p => p.promo && p.active).slice(0,4);
+        document.getElementById('promoGrid').innerHTML = promos.map(p => generateProductCard(p, 'promo')).join('');
+
+        const top = products.filter(p => p.active).map(getEffectiveProductData).sort((a,b) => b.orders - a.orders).slice(0,4);
+        document.getElementById('topOrdersGrid').innerHTML = top.map(p => generateProductCard(p, 'top')).join('');
+    }
+
+    function renderCarousel() {
+        const track = document.getElementById('carouselTrack');
+        const carouselItems = products.filter(p => p.active).map(getEffectiveProductData).slice(0, 5);
+        
+        if(carouselItems.length === 0) {
+            track.innerHTML = `<div class="banner banner-bg-1"><div class="banner-content"><h3>¡Bienvenidos!</h3></div></div>`;
+            return;
+        }
+
+        track.innerHTML = carouselItems.map(p => `
+            <div class="banner" style="background-image: url('${p.image}'); background-size: cover; background-position: center; cursor: pointer;" onclick="goToProduct(${p.id})">
+                <div class="banner-content">
+                    <span class="banner-subtitle">¡Recomendado!</span>
+                    <h3>${p.name}</h3>
+                    <span class="banner-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderTvView() {
+        const promos = products.map(getEffectiveProductData).filter(p => p.promo && p.active).slice(0, 8);
+        document.getElementById('tvPromoGrid').innerHTML = promos.map(p => generateProductCard(p, 'tv-promo')).join('');
+
+        const top = products.filter(p => p.active).map(getEffectiveProductData).sort((a,b) => b.orders - a.orders).slice(0, 8);
+        document.getElementById('tvTopOrdersGrid').innerHTML = top.map(p => generateProductCard(p, 'tv-top')).join('');
+
+        const track = document.getElementById('tvCarouselTrack');
+        const carouselItems = products.filter(p => p.active).map(getEffectiveProductData).slice(0, 5);
+        
+        if(carouselItems.length === 0) {
+            track.innerHTML = `<div class="banner banner-bg-1"><div class="banner-content"><h3>¡Bienvenidos a FoodApp!</h3></div></div>`;
+            return;
+        }
+
+        track.innerHTML = carouselItems.map(p => `
+            <div class="banner" style="background-image: url('${p.image}'); background-size: cover; background-position: center;">
+                <div class="banner-content">
+                    <span class="banner-subtitle">¡Menú Digital!</span>
+                    <h3>${p.name}</h3>
+                    <span class="banner-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function toggleFullScreen(elementId) {
+        const elem = document.getElementById(elementId);
+        if (!document.fullscreenElement) {
+            if (elem.requestFullscreen) elem.requestFullscreen();
+            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+            else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+            showToast("Modo TV activado");
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    function renderCategories() {
+        const catHtml = categories.map(c => `
+            <div class="category-chip ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">
+                ${c}
+            </div>
+        `).join('');
+        document.getElementById('homeCategories').innerHTML = catHtml;
+        document.getElementById('menuCategories').innerHTML = catHtml;
+    }
+
+    function setCategory(cat) {
+        currentCategory = cat;
+        renderCategories();
+        if(document.getElementById('view-menu').classList.contains('active')) renderFullMenu();
+        else navigate('menu');
+    }
+
+    function renderFullMenu(filterText = '') {
+        let filtered = products.filter(p => p.active).map(getEffectiveProductData);
+        
+        if(currentCategory !== "Todos") filtered = filtered.filter(p => p.category === currentCategory);
+        if(filterText) filtered = filtered.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
+
+        const grid = document.getElementById('fullMenuGrid');
+        if(filtered.length === 0) grid.innerHTML = `<div class="empty-state"><p>No se encontraron productos.</p></div>`;
+        else grid.innerHTML = filtered.map(p => generateProductCard(p, 'menu')).join('');
+    }
+
+    function handleSearch(val) {
+        if(val.length > 0) {
+            navigate('menu');
+            renderFullMenu(val);
+        } else renderFullMenu();
+    }
+
+    // --- CARRITO Y CHECKOUT EN SUPABASE ---
+    function addToCart(id) {
+        const rawProduct = products.find(p => p.id === id);
+        if(!rawProduct) return;
+        const product = getEffectiveProductData(rawProduct);
+
+        const existing = cart.find(item => item.id === id);
+        if(existing) existing.qty++;
+        else cart.push({ ...product, qty: 1 });
+        
+        saveState();
+        updateCartBadge();
+        showToast("Agregado al carrito");
+        
+        const floatBtn = document.getElementById('floatingCart');
+        if(floatBtn) {
+            floatBtn.style.transform = 'scale(1.1)';
+            setTimeout(() => floatBtn.style.transform = 'none', 200);
+        }
+    }
+
+    function updateCartQty(id, delta) {
+        const item = cart.find(i => i.id === id);
+        if(!item) return;
+        item.qty += delta;
+        if(item.qty <= 0) cart = cart.filter(i => i.id !== id);
+        
+        saveState();
+        updateCartBadge();
+        renderCart();
+    }
+
+    function updateCartBadge() {
+        const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+        const badge2 = document.getElementById('floatingCartBadge');
+        const floatBtn = document.getElementById('floatingCart');
+
+        if(totalItems > 0) {
+            badge2.innerText = totalItems;
+            if(!document.getElementById('view-cart').classList.contains('active') && 
+               !document.getElementById('view-admin').classList.contains('active')) {
+                floatBtn.style.display = 'flex';
+            } else floatBtn.style.display = 'none';
+        } else floatBtn.style.display = 'none';
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cartItemsContainer');
+        const summary = document.getElementById('cartSummary');
+        const emptyState = document.getElementById('emptyCartState');
+        const floatBtn = document.getElementById('floatingCart');
+        floatBtn.style.display = 'none'; 
+
+        if(cart.length === 0) {
+            container.innerHTML = '';
+            summary.style.display = 'none';
+            emptyState.style.display = 'flex';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        summary.style.display = 'block';
+
+        container.innerHTML = cart.map(item => `
+            <div class="product-card" style="flex-direction:row; align-items:center; box-shadow:none;">
+                <img src="${item.image}" class="product-img" style="width:70px; height:70px; border-radius:12px;">
+                <div class="product-info" style="padding: 0.5rem">
+                    <div class="product-name" style="font-size:0.9rem">${item.name}</div>
+                    <div class="product-price">$${((parseFloat(item.price) || 0) * item.qty).toFixed(2)}</div>
+                </div>
+                <div class="cart-item-actions" style="padding-right: 1rem">
+                    <button class="cart-qty-btn" onclick="updateCartQty(${item.id}, -1)">-</button>
+                    <span style="font-weight:600; width:20px; text-align:center">${item.qty}</span>
+                    <button class="cart-qty-btn" onclick="updateCartQty(${item.id}, 1)">+</button>
+                </div>
+            </div>
+        `).join('');
+
+        const subtotal = cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.qty), 0);
+        document.getElementById('cartTotal').innerText = `$${subtotal.toFixed(2)}`; 
+    }
+
+    async function checkout() {
+        if(cart.length === 0) return;
+        
+        const btn = document.querySelector('#cartSummary .checkout-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Procesando...';
+        showToast("Enviando pedido a cocina...");
+
+        let orderTotal = cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.qty), 0);
+
+        try {
+            // 1. Crear Orden en DB
+            const { data: insOrder, error: errOrd } = await supabaseClient.from('orders').insert([{
+                user_id: currentUser && currentUser.id ? currentUser.id : null,
+                total: orderTotal,
+                status: 'Pendiente'
+            }]).select();
+
+            if(errOrd) throw errOrd;
+            const dbOrderId = insOrder[0].id;
+
+            // 2. Crear Items de la orden
+            const itemsData = cart.map(item => ({
+                order_id: dbOrderId,
+                product_id: item.id,
+                quantity: item.qty,
+                unit_price: parseFloat(item.price) || 0,
+                product_name: item.name
+            }));
+            
+            const { error: errItems } = await supabaseClient.from('order_items').insert(itemsData);
+            if(errItems) throw errItems;
+
+            // Limpiar carrito local
+            cart = [];
+            saveState();
+            
+            // Refrescar y notificar
+            await syncConSupabase(); 
+            localStorage.setItem('foodapp_trigger_sync', Date.now().toString()); 
+            
+            showToast("¡Pedido confirmado con éxito!");
+            setTimeout(() => navigate('my-orders'), 1500);
+
+        } catch(err) {
+            console.error("Checkout Error:", err);
+            showToast("Hubo un error con el pedido. Intenta de nuevo.");
+        } finally {
+            if(btn) { btn.disabled = false; btn.innerHTML = 'Confirmar Pedido'; }
+        }
+    }
+
+    // --- ALERTAS Y NOTIFICACIONES DE PEDIDOS ---
+    function updateOrdersBadge() {
+        // Alerta para clientes
+        const completedOrders = orders.filter(o => o.status === 'Completado' && o.userId === (currentUser?.id || null)).length;
+        const badge = document.getElementById('navOrdersBadge');
+        if(badge) badge.style.display = completedOrders > 0 ? 'flex' : 'none';
+
+        // Alerta para Admin
+        const pendingOrders = orders.filter(o => o.status === 'Pendiente').length;
+        const adminBadge = document.getElementById('adminOrdersBadge');
+        if(adminBadge) adminBadge.style.display = pendingOrders > 0 ? 'flex' : 'none';
+    }
+
+    // --- PANEL ADMIN ---
+    function renderAdmin() {
+        const floatBtn = document.getElementById('floatingCart');
+        if(floatBtn) floatBtn.style.display = 'none';
+    }
+
+    // --- GESTIÓN DE PRODUCTOS (ADMIN) ---
+    function renderAdminProducts() {
+        const search = document.getElementById('adminProductSearch').value.toLowerCase();
+        const cat = document.getElementById('adminProductCategory').value;
+        
+        let filtered = products;
+        if (cat !== 'Todos') filtered = filtered.filter(p => p.category === cat);
+        if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search));
+
+        const list = document.getElementById('adminProductsManagerList');
+        
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="empty-state"><p>No se encontraron productos.</p></div>`;
+            return;
+        }
+
+        const today = getLocalYYYYMMDD();
+
+        list.innerHTML = filtered.map(rawP => {
+            const p = getEffectiveProductData(rawP);
+            let promoStatusStr = '';
+            if (rawP.promo) {
+                if (p.promo) promoStatusStr = '<span style="color:#10b981; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(PROMO ACTIVA)</span>';
+                else if (rawP.promoEnd && today > rawP.promoEnd) promoStatusStr = '<span style="color:#ef4444; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(EXPIRADA)</span>';
+                else promoStatusStr = '<span style="color:#f59e0b; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(PROGRAMADA)</span>';
+            }
+
+            return `
+            <div class="admin-card" style="margin: 0 0 1rem 0; display:flex; flex-direction:column; gap:0.5rem; ${!rawP.active ? 'opacity: 0.6;' : ''}">
+                <div style="display:flex; gap:1rem; align-items:center;">
+                    <img src="${rawP.image}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
+                    <div style="flex:1;">
+                        <strong style="color:var(--text-main); font-size:0.95rem;">${rawP.name} ${!rawP.active ? '<span style="color:#ef4444;">(Oculto)</span>' : ''}</strong>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">${rawP.category} | $${p.price.toFixed(2)} ${promoStatusStr}</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+                    <button class="btn-status process" onclick="openEditProductForm(${rawP.id})">Editar</button>
+                    <button class="btn-status" style="background-color: #f59e0b;" onclick="togglePromoCard(${rawP.id})">Promo</button>
+                    <button class="btn-status" style="background-color: #ef4444;" onclick="deleteAdminProduct(${rawP.id})">Eliminar</button>
+                </div>
+                
+                <div id="promo-settings-card-${rawP.id}" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="color:var(--text-main); font-size: 0.9rem;">Configurar Promoción</strong>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="manage-active-${rawP.id}" ${rawP.active ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 0.5rem;">
+                        <div style="flex:1; min-width:80px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio Promo ($)</label>
+                            <input type="number" id="manage-price-${rawP.id}" class="admin-input" value="${rawP.price}" step="0.01">
+                        </div>
+                        <div style="flex:1; min-width:80px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio Normal ($)</label>
+                            <input type="number" id="manage-oldprice-${rawP.id}" class="admin-input" value="${rawP.oldPrice !== null ? rawP.oldPrice : ''}" step="0.01">
+                        </div>
+                        <div style="flex:1; min-width:100px; display:flex; align-items:flex-end;">
+                            <label style="display:flex; align-items:center; gap:0.5rem; color:var(--text-main); font-size:0.9rem; margin-bottom: 0.5rem;">
+                                <input type="checkbox" id="manage-promo-${rawP.id}" ${rawP.promo ? 'checked' : ''} onchange="togglePromoUI(${rawP.id}, this.checked)">
+                                Activar Promo
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="manage-promo-dates-${rawP.id}" style="display: ${rawP.promo ? 'flex' : 'none'}; gap:0.5rem; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:130px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Inicio (Opcional)</label>
+                            <input type="date" id="manage-start-${rawP.id}" class="admin-input" value="${rawP.promoStart || ''}">
+                        </div>
+                        <div style="flex:1; min-width:130px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Fin (Opcional)</label>
+                            <input type="date" id="manage-end-${rawP.id}" class="admin-input" value="${rawP.promoEnd || ''}">
+                        </div>
+                    </div>
+
+                    <button class="checkout-btn" id="btn-save-manage-${rawP.id}" style="padding: 0.6rem; margin-top: 0.5rem; font-size: 0.95rem; width: 100%;" onclick="savePromoSettings(${rawP.id})">Guardar Ajustes</button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    function togglePromoCard(id) {
+        const card = document.getElementById(`promo-settings-card-${id}`);
+        card.style.display = (card.style.display === 'none' || card.style.display === '') ? 'flex' : 'none';
+    }
+
+    function togglePromoUI(id, isChecked) {
+        const datesDiv = document.getElementById(`manage-promo-dates-${id}`);
+        datesDiv.style.display = isChecked ? 'flex' : 'none';
+        
+        const priceInput = document.getElementById(`manage-price-${id}`);
+        const oldPriceInput = document.getElementById(`manage-oldprice-${id}`);
+        
+        if (isChecked) {
+            if (priceInput.value !== '' && oldPriceInput.value === '') {
+                oldPriceInput.value = priceInput.value;
+                priceInput.value = ''; 
+            }
+        } else {
+            if (oldPriceInput.value !== '') {
+                priceInput.value = oldPriceInput.value;
+                oldPriceInput.value = '';
+            }
+            document.getElementById(`manage-start-${id}`).value = '';
+            document.getElementById(`manage-end-${id}`).value = '';
+        }
+    }
+
+    // Botón oficial de Guardado (Sube a Supabase y verifica)
+    async function savePromoSettings(id) {
+        const btn = document.getElementById(`btn-save-manage-${id}`);
+        
+        const active = document.getElementById(`manage-active-${id}`).checked;
+        const priceVal = document.getElementById(`manage-price-${id}`).value;
+        const price = priceVal === '' ? 0 : parseFloat(priceVal);
+        const oldPriceVal = document.getElementById(`manage-oldprice-${id}`).value;
+        const oldPrice = oldPriceVal === '' ? null : parseFloat(oldPriceVal);
+        const promo = document.getElementById(`manage-promo-${id}`).checked;
+        const promoStart = document.getElementById(`manage-start-${id}`).value || null;
+        const promoEnd = document.getElementById(`manage-end-${id}`).value || null;
+
+        if (promo && (priceVal === '' || oldPriceVal === '')) return showToast("⚠️ Debes ingresar ambos precios (Normal y Promo).");
+        if (promo && price >= oldPrice) return showToast("⚠️ El precio promo debe ser menor al normal.");
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Guardando...';
+
+        try {
+            const { data, error } = await supabaseClient.from('products').update({
+                active: active, price: price, old_price: oldPrice, promo: promo, promo_start: promoStart, promo_end: promoEnd
+            }).eq('id', id).select();
+
+            if (error) throw error;
+            if (data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
+            
+            await syncConSupabase(); // Sincronizamos para que todo refleje los cambios correctos
+            showToast("Ajustes guardados");
+        } catch (error) {
+            console.error(error);
+            showToast(error.message || "Error al guardar ajustes");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Guardar Ajustes'; }
+        }
+    }
+
+    function openAddProductForm() {
+        editingProductId = null;
+        document.getElementById('adminAddHeaderTitle').innerText = 'Nuevo Producto';
+        document.getElementById('addName').value = '';
+        document.getElementById('addDesc').value = '';
+        document.getElementById('addPrice').value = '';
+        document.getElementById('addCategory').value = 'Hamburguesas';
+        document.getElementById('addImageFile').value = '';
+        document.getElementById('btnAddProduct').innerHTML = '+ Agregar Producto';
+        navigate('admin-add');
+    }
+
+    function openEditProductForm(id) {
+        const p = products.find(p => p.id === id);
+        if(!p) return;
+        
+        editingProductId = id;
+        document.getElementById('adminAddHeaderTitle').innerText = 'Editar Producto';
+        document.getElementById('addName').value = p.name;
+        document.getElementById('addDesc').value = p.desc;
+        const basePrice = (p.promo && p.oldPrice !== null) ? p.oldPrice : p.price;
+        document.getElementById('addPrice').value = basePrice;
+        document.getElementById('addCategory').value = p.category;
+        document.getElementById('addImageFile').value = ''; 
+        document.getElementById('btnAddProduct').innerHTML = 'Actualizar Producto';
+        
+        navigate('admin-add');
+    }
+
+    async function deleteAdminProduct(id) {
+        if(!confirm("¿Estás seguro de eliminar este producto?")) return;
+        try {
+            const { data, error } = await supabaseClient.from('products').delete().eq('id', id).select();
+            if(error) throw error;
+            if(data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
+            
+            await syncConSupabase();
+            showToast("Producto eliminado");
+        } catch (e) {
+            console.error(e);
+            showToast(e.message || "Error al eliminar el producto.");
+        }
+    }
+
+    async function addNewProduct() {
+        const name = document.getElementById('addName').value.trim();
+        const desc = document.getElementById('addDesc').value.trim();
+        const price = parseFloat(document.getElementById('addPrice').value);
+        const category = document.getElementById('addCategory').value;
+        const fileInput = document.getElementById('addImageFile');
+        const file = fileInput.files[0];
+        const btn = document.getElementById('btnAddProduct');
+        
+        if(!name || isNaN(price)) return showToast("Falta nombre y precio");
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Guardando...';
+
+        try {
+            let imageUrl = null;
+            if (file) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(fileName, file);
+                if (uploadError) throw new Error("Error subiendo la imagen.");
+                const { data: publicUrlData } = supabaseClient.storage.from('product-images').getPublicUrl(fileName);
+                imageUrl = publicUrlData.publicUrl;
+            }
+
+            if (editingProductId) {
+                const p = products.find(prod => prod.id === editingProductId);
+                const updateData = { name: name, description: desc, category: category };
+                if (p.promo) updateData.old_price = price;
+                else updateData.price = price;
+                if (imageUrl) updateData.image = imageUrl;
+
+                const { data, error: dbError } = await supabaseClient.from('products').update(updateData).eq('id', editingProductId).select();
+                if (dbError) throw new Error("Error actualizando DB.");
+                if (data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
+                
+            } else {
+                if (!imageUrl) imageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
+                const { data, error: dbError } = await supabaseClient.from('products').insert([{
+                    name: name, description: desc, price: price, category: category, image: imageUrl, active: true
+                }]).select();
+                if (dbError) throw new Error("Error creando en DB.");
+                if (data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
+            }
+
+            await syncConSupabase(); // Forzamos carga fresca
+            navigate('admin-products');
+            showToast(editingProductId ? "¡Actualizado!" : "¡Agregado con éxito!");
+        } catch (error) {
+            console.error(error);
+            showToast(error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = editingProductId ? 'Actualizar Producto' : '+ Agregar Producto';
+        }
+    }
+
+    // --- DASHBOARD (ADMIN) ---
+    function renderDashboard() {
+        const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+        const totalOrders = orders.length;
+        const topProduct = [...products].sort((a, b) => b.orders - a.orders)[0];
+        const combos = products.filter(p => p.category === 'Combos');
+        const topCombo = combos.length > 0 ? [...combos].sort((a, b) => b.orders - a.orders)[0] : null;
+
+        document.getElementById('dashTotalSales').innerText = `$${totalSales.toFixed(2)}`;
+        document.getElementById('dashTotalOrders').innerText = totalOrders;
+        document.getElementById('dashTopProduct').innerText = topProduct && topProduct.orders > 0 ? topProduct.name : 'N/A';
+        document.getElementById('dashTopCombo').innerText = topCombo && topCombo.orders > 0 ? topCombo.name : 'N/A';
+
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        if(salesChartInstance) salesChartInstance.destroy();
+
+        const chartLabels = categories.filter(c => c !== 'Todos');
+        const chartData = chartLabels.map(cat => products.filter(p => p.category === cat).reduce((sum, p) => sum + p.orders, 0));
+        const chartColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
+
+        salesChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: chartColors, borderWidth: 2, borderColor: isDarkMode ? '#1f2937' : '#ffffff' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#9ca3af' : '#6b7280', padding: 15, usePointStyle: true } } }, cutout: '65%' }
+        });
+    }
+
+    // --- GESTIÓN DE USUARIOS A BASE DE DATOS (ADMIN) ---
+    function renderAdminUsers() {
+        const list = document.getElementById('adminUsersList');
+        list.innerHTML = appUsers.map(u => `
+            <div class="admin-card" style="margin: 0 0 1rem 0; ${u.banned ? 'opacity: 0.6; border-left: 4px solid red;' : ''}">
+                <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <strong style="color:var(--text-main)">${u.name} ${u.role === 'admin' ? '<span style="color:var(--primary); font-size:0.75rem;">(Admin)</span>' : ''}</strong>
+                    ${u.banned ? '<span style="color:red; font-size:0.75rem; font-weight:bold;">Baneado</span>' : ''}
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 0.75rem;">
+                    ${u.email} <br> Cel: ${u.phone}
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                    ${u.email !== 'tes@hsx.com' ? `
+                        <button class="btn-status" style="background-color: ${u.banned ? '#22c55e' : '#f59e0b'};" onclick="toggleBanUser('${u.id}', ${u.banned})">${u.banned ? 'Desbanear' : 'Banear'}</button>
+                        <button class="btn-status" style="background-color: #ef4444;" onclick="deleteUser('${u.id}')">Eliminar</button>
+                    ` : '<span style="font-size: 0.7rem; color: var(--text-muted);">Admin principal no modificable</span>'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function adminAddNewUser() {
+        const name = document.getElementById('adminNewUserName').value.trim();
+        const phone = document.getElementById('adminNewUserPhone').value.trim();
+        const email = document.getElementById('adminNewUserEmail').value.trim();
+        const pass = document.getElementById('adminNewUserPass').value.trim();
+        const btn = document.getElementById('btnAdminRegisterUser');
+
+        if(!name || !email || !pass) return showToast("Llene datos obligatorios");
+        btn.disabled = true; btn.innerText = 'Registrando...';
+
+        try {
+            const { error } = await supabaseClient.from('users').insert([{ name, phone, email, password: pass, role: 'user', banned: false }]);
+            if(error) throw error;
+            document.getElementById('adminNewUserName').value = '';
+            document.getElementById('adminNewUserPhone').value = '';
+            document.getElementById('adminNewUserEmail').value = '';
+            document.getElementById('adminNewUserPass').value = '';
+            await syncConSupabase();
+            showToast("Usuario registrado exitosamente");
+        } catch(e) {
+            console.error(e);
+            showToast("Error. El correo puede que ya exista.");
+        } finally {
+            btn.disabled = false; btn.innerText = '+ Registrar Usuario';
+        }
+    }
+
+    async function toggleBanUser(userId, currentBanStatus) {
+        try {
+            const { error } = await supabaseClient.from('users').update({ banned: !currentBanStatus }).eq('id', userId);
+            if(error) throw error;
+            await syncConSupabase();
+            showToast("Estado modificado");
+        } catch(e) { showToast("Error al banear"); }
+    }
+
+    async function deleteUser(userId) {
+        if(!confirm("¿Estás seguro de eliminar este usuario permanentemente?")) return;
+        try {
+            const { error } = await supabaseClient.from('users').delete().eq('id', userId);
+            if(error) throw error;
+            await syncConSupabase();
+            showToast("Usuario eliminado");
+        } catch(e) { showToast("Error al eliminar"); }
+    }
+
+    // --- FUNCIONES DE PEDIDOS Y ESTADOS CON SUPABASE ---
+    function renderOrdersAdmin() {
+        const list = document.getElementById('adminOrdersList');
+        const activeOrders = orders.filter(o => o.status !== 'Retirado');
+
+        if(activeOrders.length === 0) return list.innerHTML = `<div class="empty-state"><p>No hay pedidos activos.</p></div>`;
+
+        list.innerHTML = activeOrders.map(o => {
+            const statusClass = `status-${o.status.replace(' ', '-')}`;
+            const borderClass = `border-${o.status.replace(' ', '-')}`;
+            
+            let timerHtml = '';
+            if (o.status === 'En Proceso' && o.processStartTime) {
+                timerHtml = `<div class="order-timer" data-start-time="${o.processStartTime}"><i class="ph ph-clock"></i><span class="timer-text">00:00</span></div>`;
+            }
+
+            return `
+                <div class="order-card ${borderClass}">
+                    <div class="order-header">
+                        <div>
+                            <strong style="color:var(--text-main)">Pedido #${o.id.toString().slice(-4)}</strong>
+                            <div style="font-size:0.7rem; color:var(--text-muted)">${o.date}</div>
+                            ${timerHtml}
+                        </div>
+                        <div class="order-status ${statusClass}">${o.status}</div>
+                    </div>
+                    <div class="order-items">
+                        ${o.items.map(i => `<strong>${i.qty}x</strong> ${i.name}`).join('<br>')}
+                    </div>
+                    <div style="font-weight: bold; margin-bottom: 0.5rem; color:var(--primary);">
+                        Total: $${o.total.toFixed(2)}
+                    </div>
+                    <div class="order-actions">
+                        ${o.status === 'Pendiente' ? `<button class="btn-status process" onclick="updateOrderStatus(${o.id}, 'En Proceso')">Tomar Pedido</button>` : ''}
+                        ${o.status === 'En Proceso' ? `<button class="btn-status complete" onclick="updateOrderStatus(${o.id}, 'Completado')">Marcar Completado</button>` : ''}
+                        ${o.status === 'Completado' ? `<button class="btn-status" style="background-color: #6b7280;" onclick="updateOrderStatus(${o.id}, 'Retirado')">Retirado</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+        const order = orders.find(o => o.id === orderId);
+        if(order) {
+            let processStart = order.processStartTime;
+            if(newStatus === 'En Proceso' && !processStart) processStart = Date.now();
+
+            try {
+                const { error } = await supabaseClient.from('orders').update({
+                    status: newStatus,
+                    process_start_time: processStart
+                }).eq('id', orderId);
+
+                if(error) throw error;
+                
+                await syncConSupabase(); // Fetch updated data
+                localStorage.setItem('foodapp_trigger_sync', Date.now().toString()); // notify other devices
+                showToast(`Pedido marcado como: ${newStatus}`);
+            } catch(e) {
+                console.error(e);
+                showToast("Error de conexión");
+            }
+        }
+    }
+
+    function renderUserOrders() {
+        const list = document.getElementById('userOrdersList');
+        // Solo mostraremos pedidos del usuario actual o, si es invitado localmente y acaba de pedir, los veremos. 
+        // Idealmente en una BD real el invitado no tiene id. Buscamos pedidos de currentUser.id si lo hay
+        const userOrders = orders.filter(o => o.userId === (currentUser?.id || null) && o.status !== 'Retirado');
+
+        if(userOrders.length === 0) {
+            return list.innerHTML = `<div class="empty-state"><i class="ph ph-receipt"></i><h3>No tienes pedidos activos</h3><p>Aún no has realizado compras o ya fueron retiradas.</p></div>`;
+        }
+
+        list.innerHTML = userOrders.map(o => {
+            const statusClass = `status-${o.status.replace(' ', '-')}`;
+            const borderClass = `border-${o.status.replace(' ', '-')}`;
+            
+            let progress = 33;
+            if (o.status === 'En Proceso') progress = 66;
+            if (o.status === 'Completado') progress = 100;
+
+            let timerHtml = '';
+            if (o.status === 'En Proceso' && o.processStartTime) {
+                timerHtml = `<div class="order-timer" data-start-time="${o.processStartTime}"><i class="ph ph-fire" style="color: #ea580c"></i> Cocinando: <span class="timer-text">00:00</span></div>`;
+            }
+
+            const isReady = o.status === 'Completado';
+            const readyBanner = isReady ? `<div style="background-color: #dcfce7; color: #15803d; padding: 0.5rem; border-radius: 8px; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;"><i class="ph-fill ph-bell-ringing" style="font-size: 1.1rem; animation: shakeBell 0.5s ease-in-out infinite alternate;"></i>¡Tu pedido está listo para retirar!</div>` : '';
+
+            return `
+                <div class="order-card ${borderClass}">
+                    ${readyBanner}
+                    <div class="order-header">
+                        <div>
+                            <strong style="color:var(--text-main)">Pedido #${o.id.toString().slice(-4)}</strong>
+                            <div style="font-size:0.7rem; color:var(--text-muted)">${o.date}</div>
+                            ${timerHtml}
+                        </div>
+                        <div class="order-status ${statusClass}">${o.status}</div>
+                    </div>
+                    <div class="order-items">${o.items.map(i => `<strong>${i.qty}x</strong> ${i.name}`).join('<br>')}</div>
+                    <div style="font-weight: bold; margin-bottom: 0.5rem; color:var(--primary);">Total: $${o.total.toFixed(2)}</div>
+                    <div style="width: 100%; background: var(--border); height: 6px; border-radius: 3px; margin-top: 15px; overflow: hidden; position: relative;">
+                        <div style="width: ${progress}%; background: ${isReady ? '#22c55e' : 'var(--primary)'}; height: 100%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted); margin-top: 5px;">
+                        <span>Recibido</span><span>Preparando</span><span>Listo</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- TEMA ---
+    function toggleTheme() {
+        isDarkMode = !isDarkMode;
+        if(isDarkMode) { document.body.classList.add('dark-mode'); localStorage.setItem('foodapp_theme', 'dark'); } 
+        else { document.body.classList.remove('dark-mode'); localStorage.setItem('foodapp_theme', 'light'); }
+        updateThemeIcon();
+    }
+
+    function updateThemeIcon() {
+        document.getElementById('themeToggle').innerHTML = isDarkMode ? '<i class="ph ph-sun"></i>' : '<i class="ph ph-moon"></i>';
+    }
+
+    // --- REGISTRO PWA ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW error', err));
+        });
+    }
+
+    init();
+
+</script>
+</body>
+</html>
