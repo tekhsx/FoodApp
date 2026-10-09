@@ -17,11 +17,12 @@
   const accountLabel = identity => identity?.id ? 'user:' + identity.id : 'guest';
   const safeToast = message => typeof showToast === 'function' ? showToast(message) : alert(message);
   let processing = false;
+  let createdDeviceOnThisLoad = false;
 
   function getDevice() {
     try {
       const stored = JSON.parse(localStorage.getItem(deviceKey) || 'null');
-      if (stored?.deviceId && stored?.deviceSecret) return stored;
+      if (/^[a-f0-9-]{36}$/i.test(stored?.deviceId || '') && /^[a-f0-9]{64}$/i.test(stored?.deviceSecret || '')) return stored;
     } catch {}
     const bytes = new Uint8Array(32);
     crypto.getRandomValues(bytes);
@@ -30,6 +31,7 @@
       deviceSecret: Array.from(bytes, x => x.toString(16).padStart(2, '0')).join('')
     };
     localStorage.setItem(deviceKey, JSON.stringify(record));
+    createdDeviceOnThisLoad = true;
     return record;
   }
   function storedSession(identity) {
@@ -142,6 +144,13 @@
     let sub = await reg.pushManager.getSubscription();
     if (!sub && existingOnly) return false;
     const key = await getVapidKey();
+    // Si la app perdió su ID local pero el navegador conservó PushManager,
+    // liberar el endpoint anterior antes de registrar una instalación nueva.
+    let device = getDevice();
+    if (sub && createdDeviceOnThisLoad) {
+      if (!await sub.unsubscribe()) throw new Error('No se pudo renovar una suscripción anterior.');
+      sub = null;
+    }
     if (sub?.options?.applicationServerKey) {
       const previous = new Uint8Array(sub.options.applicationServerKey);
       if (previous.length !== key.length || !previous.every((n, i) => n === key[i])) {
@@ -150,12 +159,25 @@
       }
     }
     if (!sub) sub = await subscribeBrowser(reg, key);
-    const device = getDevice();
-    await request('register', {
-      ...device, identity: identity?.id ? 'account' : 'guest',
+    const register = (d, subscription) => request('register', {
+      ...d, identity: identity?.id ? 'account' : 'guest',
       ...(identity?.id ? {sessionToken: session.sessionToken} : {}),
-      subscription: sub.toJSON()
+      subscription: subscription.toJSON()
     });
+    try {
+      await register(device, sub);
+    } catch (error) {
+      // Copias de datos del navegador pueden compartir un identificador antiguo.
+      // Recuperar una sola vez; nunca vincular por el nombre del cliente.
+      if (!/Dispositivo no autorizado|identificador del dispositivo ya pertenece/i.test(
+        String(error?.message || ''))) throw error;
+      await sub.unsubscribe();
+      localStorage.removeItem(deviceKey);
+      device = getDevice();
+      sub = await subscribeBrowser(reg, key);
+      await register(device, sub);
+    }
+    createdDeviceOnThisLoad = false;
     localStorage.setItem(bindingKey, accountLabel(identity));
     localStorage.removeItem(declinedKey(identity));
     showError('');
@@ -245,7 +267,8 @@
     try { await request('unregister', device); }
     catch (error) { console.warn('Error al quitar suscripción remota:', error); }
     finally {
-      localStorage.removeItem(deviceKey);
+      // Este UUID pertenece a la instalación, no al nombre escrito.
+      // Conservarlo permite seguir identificando sus pedidos tras volver a entrar.
       refreshButton();
     }
   }
