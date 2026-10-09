@@ -2785,7 +2785,8 @@
                     id: p.id, name: p.name, desc: p.description, price: parseFloat(p.price),
                     oldPrice: p.old_price ? parseFloat(p.old_price) : null, category: p.category,
                     image: p.image, active: p.active, orders: p.orders_count, promo: p.promo,
-                    promoStart: p.promo_start, promoEnd: p.promo_end
+                    promoStart: p.promo_start, promoEnd: p.promo_end,
+                    sizeOptions: Array.isArray(p.size_options)?p.size_options:[]
                 }));
             }
 
@@ -3392,7 +3393,7 @@
                     <div class="product-footer">
                         <div class="price-container">
                             ${p.promo && p.oldPrice ? `<span class="old-price">$${parseFloat(p.oldPrice).toFixed(2)}</span>` : ''}
-                            <span class="product-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+                            <span class="product-price">${getProductSizeOptions(p).length ? "Desde " : ""}$${(parseFloat(p.price)||0).toFixed(2)}</span>
                         </div>
                         <button class="add-btn" onclick="addToCart(${p.id})"><i class="ph ph-plus"></i></button>
                     </div>
@@ -4047,7 +4048,11 @@
         if(!rawProduct) return;
         const product = getEffectiveProductData(rawProduct);
 
-        const existing = cart.find(item => item.id === id);
+        if(getProductSizeOptions(rawProduct).length){
+            openProductSizeDialog(id);
+            return;
+        }
+        const existing = cart.find(item=>item.id===id && !item.sizeLabel);
         if(existing) existing.qty++;
         else cart.push({ ...product, qty: 1 });
         
@@ -4238,7 +4243,7 @@
                     <img src="${rawP.image}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
                     <div style="flex:1;">
                         <strong style="color:var(--text-main); font-size:0.95rem;">${rawP.name} ${!rawP.active ? '<span style="color:#ef4444;">(Oculto)</span>' : ''}</strong>
-                        <div style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0;">${rawP.category} | $${p.price.toFixed(2)}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0;">${rawP.category} | ${getProductSizeOptions(rawP).length ? "Desde " : ""}$${p.price.toFixed(2)}</div>
                         <div aria-live="polite">${promoStatusStr}</div>
                     </div>
                 </div>
@@ -4472,6 +4477,7 @@
         document.getElementById('addCategory').value = 'Hamburguesas';
         document.getElementById('addImageFile').value = '';
         document.getElementById('btnAddProduct').innerHTML = '+ Agregar Producto';
+        populateProductSizeFields();
         navigate('admin-add');
     }
 
@@ -4488,6 +4494,7 @@
         document.getElementById('addCategory').value = p.category;
         document.getElementById('addImageFile').value = ''; 
         document.getElementById('btnAddProduct').innerHTML = 'Actualizar Producto';
+        populateProductSizeFields(p);
         
         navigate('admin-add');
     }
@@ -4510,7 +4517,10 @@
     async function addNewProduct() {
         const name = document.getElementById('addName').value.trim();
         const desc = document.getElementById('addDesc').value.trim();
-        const price = parseFloat(document.getElementById('addPrice').value);
+        let sizeOptions=[];
+        try { sizeOptions=configuredProductSizes(); } catch(error){ return showToast(error.message); }
+        const price = sizeOptions.length ? Math.min(...sizeOptions.map(v=>v.price))
+            : parseFloat(document.getElementById('addPrice').value);
         const category = document.getElementById('addCategory').value;
         const fileInput = document.getElementById('addImageFile');
         const file = fileInput.files[0];
@@ -4534,7 +4544,7 @@
 
             if (editingProductId) {
                 const p = products.find(prod => prod.id === editingProductId);
-                const updateData = { name: name, description: desc, category: category };
+                const updateData = { name: name, description: desc, category: category, size_options:sizeOptions };
                 if (p.promo) updateData.old_price = price;
                 else updateData.price = price;
                 if (imageUrl) updateData.image = imageUrl;
@@ -4546,7 +4556,8 @@
             } else {
                 if (!imageUrl) imageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80';
                 const { data, error: dbError } = await supabaseClient.from('products').insert([{
-                    name: name, description: desc, price: price, category: category, image: imageUrl, active: true
+                    name: name, description: desc, price: price, category: category, image: imageUrl, active: true,
+                    size_options:sizeOptions
                 }]).select();
                 if (dbError) throw new Error("Error creando en DB.");
                 if (data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
