@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.13">
+    <meta name="foodapp-version" content="2026.10.09.14">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -3697,6 +3697,10 @@
         return `$${(Number.isFinite(amount) ? amount : 0).toFixed(2)}`;
     }
 
+    function tvDisplayPrice(product) {
+        return (getProductSizeOptions(product).length ? 'Desde ' : '') + tvPrice(product.price);
+    }
+
     function tvImage(p, className) {
         return `<img class="${className}" src="${tvEscape(p.image || '')}" alt="${tvEscape(p.name)}" loading="eager" decoding="async">`;
     }
@@ -3726,7 +3730,7 @@
                 <div class="tv-item-name">${tvEscape(p.name)}</div>
                 <div class="tv-item-prices">
                     ${p.promo && p.oldPrice != null ? `<span class="tv-item-old">${tvPrice(p.oldPrice)}</span>` : ''}
-                    <span class="tv-item-price">${tvPrice(p.price)}</span>
+                    <span class="tv-item-price">${tvDisplayPrice(p)}</span>
                 </div>
             </div>
         </article>`;
@@ -3862,7 +3866,7 @@
                 <div class="tv-poster-product-name">${tvEscape(p.name)}</div>
                 <div class="tv-poster-product-prices">
                     ${p.promo && p.oldPrice != null ? `<s>${tvPrice(p.oldPrice)}</s>` : '<span></span>'}
-                    <strong>${tvPrice(p.price)}</strong>
+                    <strong>${tvDisplayPrice(p)}</strong>
                 </div>
             </article>`).join('') : '<div class="tv-poster-empty">Próximamente tendremos nuevos productos</div>';
         const updateLabels = () => {
@@ -3884,7 +3888,7 @@
         if (activeMenu.length) {
             const featured = ordered[tvBannerIndex % ordered.length];
             posterPhoto.innerHTML = `${tvImage(featured, '')}<span class="tv-poster-feature-tag">${featured.promo ? 'OFERTA ESPECIAL' : 'RECOMENDADO'}</span>`;
-            posterHighlight.innerHTML = `<h2>${tvEscape(featured.name)}</h2>${featured.promo && featured.oldPrice != null ? `<s class="tv-poster-highlight-old">Antes ${tvPrice(featured.oldPrice)}</s>` : ''}<strong class="tv-poster-highlight-price">${tvPrice(featured.price)}</strong>`;
+            posterHighlight.innerHTML = `<h2>${tvEscape(featured.name)}</h2>${featured.promo && featured.oldPrice != null ? `<s class="tv-poster-highlight-old">Antes ${tvPrice(featured.oldPrice)}</s>` : ''}<strong class="tv-poster-highlight-price">${tvDisplayPrice(featured)}</strong>`;
         } else {
             posterPhoto.innerHTML = '';
             posterHighlight.innerHTML = "<h2>Bienvenidos a tu'dale</h2>";
@@ -3911,14 +3915,14 @@
                     <div class="tv-spotlight-small-name">${tvEscape(p.name)}</div>
                     ${p.promo ? '<span class="tv-spotlight-promo-tag">PROMO</span>' : ''}
                     ${p.promo && p.oldPrice != null ? `<div class="tv-spotlight-small-old">${tvPrice(p.oldPrice)}</div>` : ''}
-                    <div class="tv-spotlight-small-price">${tvPrice(p.price)}</div>
+                    <div class="tv-spotlight-small-price">${tvDisplayPrice(p)}</div>
                 </div>
             </article>`).join('') : '<div class="tv-spotlight-side-empty">¡Disfruta nuestro menú!</div>';
         main.innerHTML = `${tvImage(featured, 'tv-spotlight-photo')}
             <div class="tv-spotlight-text">
                 <span class="tv-spotlight-kicker"><i class="ph-fill ph-fire"></i> ${featured.promo ? 'OFERTA ESPECIAL' : 'EL SABOR DESTACADO'}</span>
                 <h2 class="tv-spotlight-headline">${tvEscape(featured.name)}</h2>
-                <span class="tv-spotlight-price">${tvPrice(featured.price)}</span>
+                <span class="tv-spotlight-price">${tvDisplayPrice(featured)}</span>
                 ${featured.promo && featured.oldPrice != null ? `<div class="tv-spotlight-old-price">Antes: <s>${tvPrice(featured.oldPrice)}</s></div>` : ''}
             </div>
             <div class="tv-spotlight-bottom"><img class="tudale-tv-footer-icon" src="./icons/tudale-logo.png" alt=""><span>tu'dale · ¡Pide tu favorito!</span></div>`;
@@ -3993,7 +3997,7 @@
                     <span class="tv-tile-name">${tvEscape(p.name)}</span>
                     <div class="tv-tile-price-wrap">
                         ${p.promo && p.oldPrice != null ? `<s class="tv-tile-old-price">${tvPrice(p.oldPrice)}</s>` : ''}
-                        <span class="tv-tile-price">${tvPrice(p.price)}</span>
+                        <span class="tv-tile-price">${tvDisplayPrice(p)}</span>
                     </div>
                 </div>
             </div>`).join('');
