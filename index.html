@@ -1995,6 +1995,23 @@
 .promo-size-row>input:disabled{opacity:.5}
 .promo-size-row:has(input:checked){border-color:var(--primary);background:rgba(239,68,68,.05)}
 
+
+.promo-size-preview{margin-top:5px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;
+    color:var(--text-main);font-size:.78rem;font-weight:750;background:var(--bg-color)}
+.promo-size-hint{font-size:.73rem;color:var(--text-muted);margin:5px 0 0;line-height:1.45}
+.promo-size-unavailable{opacity:.58}
+.promo-size-unavailable label{cursor:not-allowed}
+.promo-size-unavailable input{cursor:not-allowed}
+
+
+.product-size-deals{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 5px;align-items:center}
+.product-size-deal{display:inline-flex;align-items:center;gap:4px;border-radius:9px;border:1px solid rgba(239,68,68,.24);
+    background:rgba(239,68,68,.08);color:var(--text-main);font-size:.68rem;padding:5px 7px;max-width:100%;white-space:nowrap}
+.product-size-deal strong{font-size:.69rem}
+.product-size-deal s{color:var(--text-muted)}
+.product-size-deal b{font-weight:850;color:var(--primary);font-size:.75rem}
+.admin-promo-details{font-size:.73rem;color:var(--primary);font-weight:750;margin-top:4px;line-height:1.4}
+
     </style>
 </head>
 <body>
@@ -2872,6 +2889,7 @@
                     promoStart: p.promo_start, promoEnd: p.promo_end,
                     sizeOptions: Array.isArray(p.size_options)?p.size_options:[]
                 }));
+                syncCartPricesWithProducts();
             }
 
             // 2. Obtener Usuarios
@@ -2946,7 +2964,7 @@
         productPollRunning = true;
         try {
             const { data, error } = await supabaseClient.from('products')
-                .select('id, name, image, orders_count, active, price, old_price, promo, promo_start, promo_end');
+                .select('id, name, image, orders_count, active, price, old_price, promo, promo_start, promo_end, size_options');
             if (error) throw error;
             if (!data) return;
             const normalize = value => value == null ? null : String(value);
@@ -2959,7 +2977,9 @@
                     !sameAmount(current.price, row.price) ||
                     !sameAmount(current.oldPrice, row.old_price) ||
                     normalize(current.promoStart) !== normalize(row.promo_start) ||
-                    normalize(current.promoEnd) !== normalize(row.promo_end);
+                    normalize(current.promoEnd) !== normalize(row.promo_end) ||
+                    // La promoción puede cambiar solo el precio de un tamaño.
+                    JSON.stringify(current.sizeOptions||[]) !== JSON.stringify(row.size_options||[]);
             });
             if (changed) await syncConSupabase();
         } catch (error) {
@@ -3517,6 +3537,16 @@
             oldPrice:active?p.oldPrice:null};
     }
 
+
+    function renderProductSizeDeals(product){
+        if(!isProductPromoInDates(product))return '';
+        const discounted=getProductSizeOptions(product).filter(size=>sizePriceForProduct(product,size)<size.price);
+        if(!discounted.length)return '';
+        return '<div class="product-size-deals" aria-label="Ofertas por tamaño">'+
+            discounted.map(size=>'<span class="product-size-deal"><strong>'+escapeCustomerHtml(size.name)+'</strong>'+
+                '<s>$'+size.price.toFixed(2)+'</s><b>$'+sizePriceForProduct(product,size).toFixed(2)+'</b></span>').join('')+'</div>';
+    }
+
     function generateProductCard(p, context = '') {
         if (!p.active && !document.getElementById('view-admin').classList.contains('active')) return '';
         
@@ -3527,6 +3557,7 @@
                 <div class="product-info">
                     <div class="product-name">${p.name}</div>
                     <div class="product-desc">${p.desc}</div>
+                    ${renderProductSizeDeals(p)}
                     <div class="product-footer">
                         <div class="price-container">
                             ${p.promo && p.oldPrice ? `<span class="old-price">$${parseFloat(p.oldPrice).toFixed(2)}</span>` : ''}
@@ -3833,7 +3864,13 @@
     }
 
     function tvDisplayPrice(product) {
-        return (getProductSizeOptions(product).length ? 'Desde ' : '') + tvPrice(product.price);
+        const sizes=getProductSizeOptions(product);
+        if(sizes.length&&isProductPromoInDates(product)){
+            const discounted=sizes.filter(size=>sizePriceForProduct(product,size)<size.price);
+            if(discounted.length===1)return 'Oferta '+discounted[0].name+' '+tvPrice(sizePriceForProduct(product,discounted[0]));
+            if(discounted.length>1)return 'Ofertas desde '+tvPrice(Math.min(...discounted.map(size=>sizePriceForProduct(product,size))));
+        }
+        return (sizes.length ? 'Desde ' : '') + tvPrice(product.price);
     }
 
     function tvImage(p, className) {
@@ -4255,6 +4292,26 @@
         } else floatBtn.style.display = 'none';
     }
 
+    function syncCartPricesWithProducts(){
+        if(cartCheckoutInProgress||!cart.length)return;
+        let changed=false;
+        for(const item of cart){
+            const product=products.find(p=>String(p.id)===String(item.id));
+            if(!product)continue;
+            const sizes=getProductSizeOptions(product);
+            const selected=item.sizeLabel?sizes.find(size=>size.name===item.sizeLabel):null;
+            const next=selected?sizePriceForProduct(product,selected):
+                !sizes.length?getEffectiveProductData(product).price:null;
+            if(next!==null && Number.isFinite(Number(next)) && Number(item.price)!==Number(next)){
+                item.price=Number(next);changed=true;
+            }
+        }
+        if(changed){
+            saveState();
+            if(document.getElementById('view-cart')?.classList.contains('active'))renderCart();
+        }
+    }
+
     function renderCart() {
         const container = document.getElementById('cartItemsContainer');
         const summary = document.getElementById('cartSummary');
@@ -4413,6 +4470,12 @@
                 else promoStatusStr = '<span style="color:#d97706; font-size:0.78rem; font-weight:800;">● PROMO CONFIGURADA (PRODUCTO OCULTO)</span>';
             }
 
+            const activeSizePromos=isProductPromoInDates(rawP)?
+                getProductSizeOptions(rawP).filter(size=>sizePriceForProduct(rawP,size)<size.price):[];
+            if(activeSizePromos.length)
+                promoStatusStr+='<div class="admin-promo-details">'+
+                    activeSizePromos.map(size=>escapeCustomerHtml(size.name)+' $'+sizePriceForProduct(rawP,size).toFixed(2)).join(' · ')+'</div>';
+
             return `
             <div class="admin-card" style="margin: 0 0 1rem 0; display:flex; flex-direction:column; gap:0.5rem; ${!rawP.active ? 'opacity: 0.6;' : ''}">
                 <div style="display:flex; gap:1rem; align-items:center;">
@@ -4504,6 +4567,7 @@
         if (!card) return;
 
         card.style.display = 'flex';
+        refreshPromoSizePreview(id);
         const promoInput = document.getElementById('manage-price-'+id) ||
             card.querySelector('.promo-size-row input[type="number"]:not(:disabled)');
         if (promoInput) setTimeout(() => {
@@ -4519,23 +4583,58 @@
         if(!check||!input)return;
         input.disabled=!check.checked;
         if(check.checked&&!input.value)input.focus();
+        refreshPromoSizePreview(id);
     }
     function promoSizeEditor(product){
         const sizes=getProductSizeOptions(product);
+        const byName=new Map(sizes.map(size=>[size.name,size]));
+        const existing=PRODUCT_SIZE_NAMES.filter(name=>byName.has(name));
+        const unavailable=PRODUCT_SIZE_NAMES.filter(name=>!byName.has(name));
         return '<div class="promo-size-selector">'+
-            '<strong>¿A qué tamaños aplicar la promoción?</strong>'+
-            '<p>Selecciona uno o varios tamaños y coloca el precio con descuento de cada uno.</p>'+
-            sizes.map((size,index)=>{
-                const selected=product.promo&&size.promoPrice!==null;
-                return '<div class="promo-size-row"><label for="promo-size-check-'+product.id+'-'+index+'">'+
+            '<strong>Selecciona los tamaños en promoción</strong>'+
+            '<p>Marca uno o varios tamaños. Cada tamaño tiene su propio precio promocional.</p>'+
+            PRODUCT_SIZE_NAMES.map((name,index)=>{
+                const size=byName.get(name);
+                const selectable=Boolean(size);
+                const selected=selectable&&product.promo&&size.promoPrice!==null;
+                const currentPrice=selected?size.promoPrice.toFixed(2):'';
+                return '<div class="promo-size-row'+(selectable?'':' promo-size-unavailable')+'">'+
+                    '<label for="promo-size-check-'+product.id+'-'+index+'">'+
                     '<input type="checkbox" id="promo-size-check-'+product.id+'-'+index+'" '+
-                    'onchange="togglePromoSizePrice('+product.id+','+index+')" '+(selected?'checked':'')+'>'+
-                    '<span class="promo-size-row-label"><strong>'+escapeCustomerHtml(size.name)+'</strong>'+
-                    '<small>Normal: $'+size.price.toFixed(2)+'</small></span></label>'+
-                    '<input type="number" id="promo-size-price-'+product.id+'-'+index+'" min="0" step="0.01" inputmode="decimal" '+
-                    'aria-label="Precio promocional de '+escapeCustomerHtml(size.name)+'" placeholder="Promo $" '+
-                    (selected?'value="'+size.promoPrice.toFixed(2)+'"':'disabled')+'></div>';
-            }).join('')+'</div>';
+                        'onchange="togglePromoSizePrice('+product.id+','+index+')" '+
+                        (selected?'checked ':'')+(selectable?'':'disabled ')+
+                        'aria-label="Promoción para '+escapeCustomerHtml(name)+'">'+
+                    '<span class="promo-size-row-label"><strong>'+escapeCustomerHtml(name)+'</strong>'+
+                        '<small>'+(selectable?'Precio normal: $'+size.price.toFixed(2):
+                            'No disponible · Configúralo en Editar producto')+'</small></span></label>'+
+                    '<input type="number" id="promo-size-price-'+product.id+'-'+index+
+                        '" min="0" step="0.01" inputmode="decimal" placeholder="Promo $" '+
+                        'aria-label="Precio de promoción '+escapeCustomerHtml(name)+'" '+
+                        (currentPrice?'value="'+currentPrice+'" ':'')+
+                        (selected?'':'disabled')+'></div>';
+            }).join('')+
+            '<div class="promo-size-preview" id="promo-size-preview-'+product.id+'" role="status" aria-live="polite"></div>'+
+            (unavailable.length ? '<p class="promo-size-hint">Los tamaños no disponibles se activan primero en <b>Editar producto</b>.</p>' : '')+
+            '</div>';
+    }
+    function refreshPromoSizePreview(id){
+        const product=products.find(p=>String(p.id)===String(id));
+        if(!product)return;
+        const sizes=getProductSizeOptions(product);
+        const chosen=[];
+        sizes.forEach(size=>{
+            const index=PRODUCT_SIZE_NAMES.indexOf(size.name);
+            const checked=document.getElementById('promo-size-check-'+id+'-'+index);
+            const input=document.getElementById('promo-size-price-'+id+'-'+index);
+            if(!checked?.checked)return;
+            const promo=Number(input?.value);
+            const valid=String(input?.value||'').trim()!=='' && Number.isFinite(promo) && promo>=0 && promo<size.price;
+            chosen.push({name:size.name,price:valid?'$'+promo.toFixed(2):'Sin precio válido'});
+        });
+        const preview=document.getElementById('promo-size-preview-'+id);
+        if(preview)preview.textContent=chosen.length ?
+            'Ofertas seleccionadas: '+chosen.map(x=>x.name+' '+x.price).join(' · ') :
+            'Selecciona al menos un tamaño.';
     }
 
     function showPromoError(id, message) {
@@ -4634,8 +4733,9 @@
             const next=[];
             let selected=0;
             for(const [index,size] of sizes.entries()){
-                const selectedBox=document.getElementById('promo-size-check-'+id+'-'+index);
-                const input=document.getElementById('promo-size-price-'+id+'-'+index);
+                const uiIndex=PRODUCT_SIZE_NAMES.indexOf(size.name);
+                const selectedBox=document.getElementById('promo-size-check-'+id+'-'+uiIndex);
+                const input=document.getElementById('promo-size-price-'+id+'-'+uiIndex);
                 if(!selectedBox?.checked){
                     next.push({name:size.name,price:size.price});
                     continue;
