@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.09.9",
-  "message": "Resumen eficiente: carga bajo demanda, caché local de 10 minutos y consultas por rango."
+  "version": "2026.10.09.10",
+  "message": "Identificación única de dispositivos y clientes con nombres iguales para notificaciones."
 }
