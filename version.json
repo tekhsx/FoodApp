@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.09.18",
-  "message": "Promociones por tamaño: selecciona Clásico, Mediano, Grande o Extra grande con precios promocionales independientes."
+  "version": "2026.10.09.19",
+  "message": "Corregida promoción por tamaño: cuatro opciones visibles, precios y descuentos individuales sincronizados en todos los dispositivos."
 }
