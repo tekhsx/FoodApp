@@ -4500,13 +4500,12 @@
         if (!card) return;
 
         card.style.display = 'flex';
-        const promoInput = document.getElementById(`manage-price-${id}`);
-        if (promoInput) {
-            setTimeout(() => {
-                promoInput.focus();
-                promoInput.select();
-            }, 50);
-        }
+        const promoInput = document.getElementById('manage-price-'+id) ||
+            card.querySelector('.promo-size-row input[type="number"]:not(:disabled)');
+        if (promoInput) setTimeout(() => {
+            promoInput.focus();
+            if(typeof promoInput.select==='function')promoInput.select();
+        },50);
     }
 
 
@@ -4765,9 +4764,26 @@
 
             if (editingProductId) {
                 const p = products.find(prod => prod.id === editingProductId);
+                const earlierSizes=getProductSizeOptions(p);
+                if(sizeOptions.length){
+                    // Conservar promociones válidas al editar el precio normal de un tamaño.
+                    sizeOptions=sizeOptions.map(option=>{
+                        const previous=earlierSizes.find(x=>x.name===option.name);
+                        return p.promo && previous?.promoPrice!==null && previous?.promoPrice!==undefined &&
+                            previous.promoPrice < option.price
+                            ? {...option,promoPrice:previous.promoPrice} : option;
+                    });
+                }
                 const updateData = { name: name, description: desc, category: category, size_options:sizeOptions };
-                if (p.promo) updateData.old_price = price;
-                else updateData.price = price;
+                if(sizeOptions.length || earlierSizes.length){
+                    updateData.price=price;
+                    updateData.old_price=null;
+                    if(p.promo){
+                        updateData.promo=sizeOptions.some(x=>x.promoPrice!==undefined);
+                        if(!updateData.promo){updateData.promo_start=null;updateData.promo_end=null;}
+                    }
+                }else if(p.promo) updateData.old_price=price;
+                else updateData.price=price;
                 if (imageUrl) updateData.image = imageUrl;
 
                 const { data, error: dbError } = await supabaseClient.from('products').update(updateData).eq('id', editingProductId).select();
