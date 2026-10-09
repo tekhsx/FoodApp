@@ -1,7 +1,7 @@
 /* FoodApp PWA: caché de la aplicación, no de pedidos ni de usuarios. */
 'use strict';
 
-const CACHE_VERSION = 'foodapp-20261009-v2';
+const CACHE_VERSION = 'foodapp-20261009-v3';
 const APP_CACHE = `foodapp-shell-${CACHE_VERSION}`;
 const CDN_CACHE = `foodapp-libs-${CACHE_VERSION}`;
 const CACHE_PREFIX = 'foodapp-';
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './manifest.json',
   './version.json',
   './pwa.js',
+  './push-notifications.js',
   './offline.html',
   './icons/icon.svg',
   './icons/icon-48.png',
@@ -88,7 +89,7 @@ self.addEventListener('fetch', event => {
   if (url.origin === self.location.origin) {
     // El JavaScript de la PWA siempre busca primero la versión publicada.
     // Las imágenes estáticas se conservan en caché para poder abrir la app offline.
-    if (url.pathname.endsWith('/pwa.js') || url.pathname.endsWith('/manifest.json')) {
+    if (url.pathname.endsWith('/pwa.js') || url.pathname.endsWith('/push-notifications.js') || url.pathname.endsWith('/manifest.json')) {
       event.respondWith(networkFirst(req, APP_CACHE));
     } else {
       event.respondWith(caches.match(req).then(cached => cached || networkFirst(req, APP_CACHE)));
@@ -113,4 +114,36 @@ self.addEventListener('fetch', event => {
       }
     })());
   }
+});
+
+
+// Web Push real: ejecutado aunque no exista ninguna pestaña abierta.
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (_) { /* mensaje sin JSON */ }
+  const title = typeof payload.title === 'string' ? payload.title : 'FoodApp';
+  const safeView = payload.view === 'admin-orders' ? 'admin-orders' : 'my-orders';
+  event.waitUntil(self.registration.showNotification(title, {
+    body: String(payload.body || 'Tienes novedades sobre tu pedido.'),
+    icon: './icons/icon-192.png', badge: './icons/icon-192.png',
+    tag: String(payload.tag || 'foodapp-pedido'), renotify: true,
+    data: { view: safeView }, vibrate: [150,80,150],
+  }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const view = event.notification.data?.view === 'admin-orders' ? 'admin-orders' : 'my-orders';
+  const targetUrl = new URL('./?foodapp_view=' + encodeURIComponent(view), self.registration.scope).href;
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clientsList) {
+      if (client.url.startsWith(self.registration.scope)) {
+        await client.focus();
+        client.postMessage({ type: 'FOODAPP_PUSH_OPEN', view });
+        return;
+      }
+    }
+    await self.clients.openWindow(targetUrl);
+  })());
 });

@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.2">
+    <meta name="foodapp-version" content="2026.10.09.3">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -1719,6 +1719,23 @@
         @media (max-width: 360px) { .pwa-update-actions { gap: 6px; } .pwa-update-actions button { padding: 9px 8px; } }
         #pwaInstallBtn[hidden] { display: none !important; }
         .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+      /* Preferencias Push */
+      #pushEnableBtn[hidden], .push-auth-dialog[hidden] { display: none !important; }
+      .header-actions #pushEnableBtn.push-enabled { color: #16a34a; }
+      .push-auth-dialog { position: absolute; inset: 0; z-index: 110; display:flex;
+          align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.55); }
+      .push-auth-panel { width:100%; max-width:390px; padding:24px; border-radius:18px;
+          display:grid; gap:12px; background:var(--surface-color); color:var(--text-main);
+          box-shadow:0 14px 35px #0004; }
+      .push-auth-panel h3 { margin:0; font-size:1.25rem; }
+      .push-auth-panel p { margin:0; font-size:.88rem; color:var(--text-muted); }
+      .push-auth-panel label { font-size:.85rem; font-weight:700; }
+      .push-auth-panel input { padding:13px; border:1px solid var(--border); border-radius:10px;
+          color:var(--text-main); background:var(--bg-color); font-size:1rem; width:100%; }
+      .push-auth-buttons { display:flex; gap:10px; justify-content:flex-end; }
+      .push-auth-buttons button { padding:11px 16px; border:0; border-radius:10px;
+          font-weight:700; background:#e5e7eb; color:#111827; cursor:pointer; }
+      .push-auth-buttons button[type=submit] { background:var(--primary); color:#fff; }
     </style>
 </head>
 <body>
@@ -1728,6 +1745,18 @@
     <div id="toast">Notificación</div>
 
     <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
+    <div id="pushCredentialsDialog" class="push-auth-dialog" hidden>
+      <form id="pushCredentialsForm" class="push-auth-panel">
+        <h3>Activar notificaciones 🔔</h3>
+        <p>Verifica tu contraseña para recibir avisos únicamente de tus pedidos.</p>
+        <label for="pushAuthPassword">Contraseña de tu cuenta</label>
+        <input type="password" id="pushAuthPassword" autocomplete="current-password" required>
+        <div class="push-auth-buttons">
+          <button type="button" id="pushCancelBtn">Cancelar</button>
+          <button type="submit">Activar</button>
+        </div>
+      </form>
+    </div>
     <div id="pwaUpdateNotice" class="pwa-update-notice" role="status" aria-live="polite" hidden>
         <div class="pwa-update-head">
             <i class="ph-fill ph-arrows-clockwise" aria-hidden="true"></i>
@@ -1748,6 +1777,7 @@
             <i class="ph-fill ph-hamburger"></i> FoodApp
         </div>
         <div class="header-actions">
+            <button id="pushEnableBtn" class="push-enable-btn" type="button" title="Activar notificaciones de pedidos" hidden aria-label="Activar notificaciones de pedidos"><i class="ph ph-bell" aria-hidden="true"></i></button>
             <button id="pwaInstallBtn" type="button" hidden aria-label="Instalar FoodApp" title="Instalar FoodApp"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="sr-only">Instalar FoodApp</span></button>
             <button id="logoutBtn" onclick="logout()" style="display: none;"><i class="ph ph-sign-out"></i></button>
             <button id="themeToggle" onclick="toggleTheme()"><i class="ph ph-moon"></i></button>
@@ -2173,10 +2203,8 @@
 
     const categories = ["Todos", "Hamburguesas", "Pizzas", "Bebidas", "Postres", "Combos"];
     
-    // Usuarios por defecto (El admin siempre existirá en memoria por si falla la red)
-    const defaultUsers = [
-        { name: "Super Admin", phone: "00000000", email: "tes@hsx.com", password: "hsx123", role: "admin", banned: false }
-    ];
+    // Sin contraseñas ni cuentas administrativas incrustadas en el HTML.
+    const defaultUsers = [];
 
     let products = [];
     let cart = JSON.parse(localStorage.getItem('foodapp_cart')) || [];
@@ -2534,6 +2562,7 @@
                 localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
                 showToast(`Bienvenido ${user.name}`);
                 setupAndEnterApp();
+                void window.FoodAppPush?.associateAccount(email, pass);
             } else {
                 showToast("Credenciales incorrectas.");
             }
@@ -2578,6 +2607,7 @@
             
             showToast("Registro exitoso. ¡Bienvenido!");
             setupAndEnterApp();
+            void window.FoodAppPush?.associateAccount(email, pass);
         } catch(err) {
             console.error(err);
             showToast("Error al registrar la cuenta.");
@@ -2592,6 +2622,7 @@
         localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
         showToast("Bienvenido a FoodApp");
         setupAndEnterApp();
+        void window.FoodAppPush?.associateGuest();
     }
 
     function setupAndEnterApp() {
@@ -2608,18 +2639,29 @@
         renderHomeViews();
         updateCartBadge();
         updateOrdersBadge(); 
+        window.FoodAppPush?.refreshButton();
         
-        if(currentUser?.role === 'admin') navigate('admin');
+        const requestedView = new URLSearchParams(location.search).get('foodapp_view');
+        if (requestedView === 'admin-orders' && currentUser?.role === 'admin') navigate('admin-orders');
+        else if (requestedView === 'my-orders') navigate('my-orders');
+        else if(currentUser?.role === 'admin') navigate('admin');
         else navigate('home');
+        if (requestedView) {
+            const url = new URL(location.href);
+            url.searchParams.delete('foodapp_view');
+            history.replaceState(null, '', url);
+        }
     }
 
     function logout() {
+        void window.FoodAppPush?.disconnect();
         currentUser = null;
         localStorage.removeItem('foodapp_user');
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
         navigate('login');
+        window.FoodAppPush?.refreshButton();
         showToast("Sesión cerrada");
     }
 
@@ -3442,11 +3484,15 @@
 
         try {
             // 1. Crear Orden en DB
-            const { data: insOrder, error: errOrd } = await supabaseClient.from('orders').insert([{
+            const newOrder = {
                 user_id: currentUser && currentUser.id ? currentUser.id : null,
                 total: orderTotal,
                 status: 'Pendiente'
-            }]).select();
+            };
+            const guestDeviceId = window.FoodAppPush?.guestDeviceId();
+            if (!newOrder.user_id && guestDeviceId) newOrder.guest_device_id = guestDeviceId;
+            const { data: insOrder, error: errOrd } = await supabaseClient.from('orders')
+                .insert([newOrder]).select();
 
             if(errOrd) throw errOrd;
             const dbOrderId = insOrder[0].id;
@@ -4087,6 +4133,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-2" defer></script>
+<script src="./pwa.js?v=20261009-3" defer></script>
+<script src="./push-notifications.js?v=20261009-3" defer></script>
 </body>
 </html>
