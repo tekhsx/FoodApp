@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FoodApp - Delivery Menu</title>
+    <title>FoodApp · Menú Digital</title>
     <meta name="theme-color" content="#ef4444">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://placehold.co/192x192/ef4444/ffffff?text=FA">
+    <meta name="description" content="FoodApp: menú digital, promociones y pedidos.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FoodApp">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+    <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
     <!-- Phosphor Icons para iconos modernos -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Chart.js para la gráfica del Dashboard -->
@@ -663,81 +669,793 @@
             display: block;
         }
 
-        /* TV Mode Specifics */
+        /* ================= MENÚ DIGITAL PARA PANTALLA GRANDE ================= */
+        /* Solo la vista de TV se ensancha; las demás vistas conservan su tamaño. */
+        @media (min-width: 760px) {
+            .app-container:has(#view-admin-tv.active) {
+                max-width: 1800px;
+                width: 100%;
+            }
+        }
         .tv-mode-wrapper {
-            background-color: var(--bg-color);
-            height: calc(100vh - 120px);
-            overflow-y: auto;
+            background: #eef0f4;
+            padding: clamp(9px, 0.85vw, 18px);
+            height: calc(100dvh - 116px);
+            overflow: auto;
+            color: #101827;
         }
-        .tv-mode-wrapper .add-btn {
-            display: none; /* Ocultar botón de agregar en modo TV */
+        .tv-board {
+            height: 100%;
+            min-height: 610px;
+            display: grid;
+            grid-template-rows: minmax(220px, 43fr) minmax(350px, 57fr);
+            gap: clamp(10px, 0.8vw, 18px);
         }
-        
-        /* Estilos cuando se activa la Pantalla Completa (Fullscreen API) */
-        .tv-mode-wrapper:fullscreen {
-            background-color: var(--bg-color);
-            padding: 2rem;
-            max-width: none;
-            width: 100vw;
-            height: 100vh;
+        .tv-hero {
+            min-height: 0;
+            min-width: 0;
+            display: grid;
+            grid-template-columns: 49% minmax(0, 1fr);
+            gap: clamp(6px, 0.55vw, 12px);
+            padding: clamp(6px, 0.55vw, 12px);
+            border-radius: clamp(14px, 1.2vw, 24px);
+            overflow: hidden;
+            background: #0f0f0f;
+            box-shadow: 0 6px 18px rgba(0,0,0,.15);
+        }
+        .tv-hero-featured, .tv-hero-tile {
+            position: relative;
+            overflow: hidden;
+            background: #262626;
+            isolation: isolate;
+            min-width: 0;
+            min-height: 0;
+        }
+        .tv-hero-featured {
+            border-radius: clamp(8px, .7vw, 14px);
+        }
+        .tv-hero-featured::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,rgba(0,0,0,.86),rgba(0,0,0,.33) 66%,rgba(0,0,0,.05)),
+                        linear-gradient(0deg,rgba(0,0,0,.68),transparent 40%);
+            z-index: 0;
+        }
+        .tv-hero-photo, .tv-tile-photo, .tv-item-photo {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .tv-hero-featured .tv-featured-heading {
+            position: absolute;
+            z-index: 1;
+            top: clamp(12px, 1.6vw, 32px);
+            left: clamp(14px, 1.6vw, 34px);
+            right: 10px;
+        }
+        .tv-eyebrow {
+            display: inline-flex;
+            background: #ef4444;
+            color: white;
+            border-radius: 100px;
+            padding: .3em .9em;
+            font-size: clamp(12px, 1.1vw, 22px);
+            font-weight: 800;
+            letter-spacing: .02em;
+            line-height: 1.1;
+        }
+        .tv-featured-heading h2 {
+            margin-top: clamp(10px, .9vw, 22px);
+            color: white;
+            font-size: clamp(27px, 3.65vw, 76px);
+            font-weight: 900;
+            line-height: .98;
+            letter-spacing: -.045em;
+            text-shadow: 0 2px 10px rgba(0,0,0,.35);
+        }
+        .tv-featured-heading h2 span { display: block; color: #ff424e; }
+        .tv-featured-bottom {
+            position: absolute;
+            z-index: 1;
+            left: clamp(14px, 1.6vw, 34px);
+            right: clamp(12px, 1.1vw, 22px);
+            bottom: clamp(13px, 1.3vw, 27px);
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .tv-featured-name {
+            color: white;
+            font-size: clamp(20px, 2.1vw, 42px);
+            font-weight: 900;
+            line-height: 1.08;
+            overflow-wrap: anywhere;
+            text-shadow: 0 3px 8px rgba(0,0,0,.65);
+        }
+        .tv-featured-price, .tv-tile-price {
+            flex-shrink: 0;
+            background: #f43f46;
+            color: white;
+            border-radius: 100px;
+            padding: .15em .55em;
+            font-weight: 900;
+            white-space: nowrap;
+            box-shadow: 0 3px 8px rgba(0,0,0,.28);
+        }
+        .tv-featured-price { font-size: clamp(21px, 2.35vw, 47px); }
+        .tv-hero-tiles {
+            display: grid;
+            min-width: 0;
+            min-height: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            gap: clamp(6px, .55vw, 12px);
+        }
+        .tv-hero-tile {
+            border-radius: clamp(7px, .65vw, 14px);
+        }
+        .tv-hero-tile:nth-child(-n+2) { grid-column: span 2; }
+        .tv-hero-tile::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(0,0,0,.87) 0%, rgba(0,0,0,.10) 68%);
+            z-index: 0;
+        }
+        .tv-tile-info {
+            position: absolute;
+            z-index: 1;
+            bottom: clamp(6px, .65vw, 14px);
+            left: clamp(7px, .65vw, 14px);
+            right: clamp(7px, .65vw, 14px);
+            display: flex;
+            gap: 5px;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .tv-tile-name {
+            font-size: clamp(12px, 1.08vw, 23px);
+            line-height: 1.04;
+            font-weight: 800;
+            color: #fff;
+            overflow-wrap: anywhere;
+            text-shadow: 0 2px 5px rgba(0,0,0,.8);
+        }
+        .tv-tile-price { font-size: clamp(12px, 1.3vw, 26px); }
+        .tv-board-split {
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 45% minmax(0, 55%);
+            gap: clamp(10px, .8vw, 18px);
+        }
+        .tv-panel {
+            min-height: 0;
+            min-width: 0;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            padding: clamp(11px, 1.05vw, 22px);
+            background: #fff;
+            border: 1px solid #e1e4e9;
+            border-radius: clamp(14px, 1.05vw, 22px);
+            box-shadow: 0 3px 9px rgba(0,0,0,.045);
         }
-        .tv-mode-wrapper:fullscreen .tv-grid {
-            /* Tarjetas más abundantes y compactas en la TV */
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
-            gap: 1.5rem;
-        }
-        .tv-mode-wrapper:fullscreen .tv-title {
-            font-size: 2.5rem;
-            padding: 1.5rem 0 1rem;
+        .tv-panel-header {
+            margin-bottom: clamp(9px, .8vw, 18px);
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
             flex-shrink: 0;
         }
-        .tv-mode-wrapper:fullscreen .tv-carousel-container {
-             height: 40vh;
-             min-height: 40vh;
-             flex-shrink: 0; /* Evita que el flexbox aplaste el carrusel a 0px */
-             padding: 0;
-             margin-bottom: 2rem;
+        .tv-panel-title {
+            padding: 0;
+            margin: 0;
+            font-size: clamp(19px, 2.15vw, 43px);
+            line-height: 1.05;
+            font-weight: 900;
+            letter-spacing: -.035em;
+            color: #101827;
         }
-        .tv-mode-wrapper:fullscreen .carousel-track {
-             height: 100%; 
+        .tv-section-fire { color: #ef4444; }
+        .tv-page-count {
+            color: #596174;
+            white-space: nowrap;
+            font-size: clamp(11px, .8vw, 16px);
+            font-weight: 700;
         }
-        .tv-mode-wrapper:fullscreen .banner {
-             height: 100%;
-             margin: 0 1%;
-             min-width: 98%;
-             border-radius: 24px;
+        .tv-product-grid {
+            display: grid;
+            flex: 1;
+            min-height: 0;
+            gap: clamp(8px, .75vw, 16px);
+            grid-template-rows: repeat(2, minmax(0, 1fr));
         }
-        .tv-mode-wrapper:fullscreen .banner h3 {
-             font-size: 4rem;
+        .tv-promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tv-menu-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tv-menu-item {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e3e6ea;
+            background: #fff;
+            border-radius: clamp(10px, .75vw, 16px);
+            box-shadow: 0 2px 4px rgba(0,0,0,.045);
         }
-        .tv-mode-wrapper:fullscreen .banner-subtitle {
-             font-size: 1.5rem;
+        .tv-item-image {
+            flex: 1 1 56%;
+            position: relative;
+            min-height: 0;
+            background: #e5e7eb;
         }
-        .tv-mode-wrapper:fullscreen .banner-price {
-             font-size: 2.5rem;
-             padding: 0.5rem 1.5rem;
-             border-radius: 30px;
-             margin-top: 1rem;
+        .tv-item-info {
+            flex: 0 0 auto;
+            padding: clamp(6px, .48vw, 11px) clamp(7px, .55vw, 13px);
+            min-height: 0;
         }
-        .tv-mode-wrapper:fullscreen .product-card {
+        .tv-item-name {
+            font-size: clamp(13px, 1.09vw, 24px);
+            line-height: 1.12;
+            font-weight: 800;
+            color: #121827;
+            overflow-wrap: anywhere;
+            margin-bottom: 3px;
+        }
+        .tv-item-prices {
+            display: flex;
+            align-items: baseline;
+            gap: clamp(4px, .5vw, 12px);
+            flex-wrap: wrap;
+        }
+        .tv-item-old {
+            font-size: clamp(11px, .78vw, 17px);
+            text-decoration: line-through;
+            color: #929bac;
+            font-weight: 700;
+        }
+        .tv-item-price {
+            color: #f02b3d;
+            font-weight: 900;
+            font-size: clamp(19px, 1.65vw, 34px);
+            line-height: 1;
+        }
+        .tv-promo-label {
+            position: absolute;
+            z-index: 1;
+            top: 8px;
+            left: 8px;
+            background: #ef333e;
+            color: white;
+            padding: .2em .6em;
+            font-weight: 800;
+            font-size: clamp(11px, .8vw, 16px);
+            border-radius: 12px;
+            box-shadow: 0 2px 7px rgba(0,0,0,.18);
+        }
+        .tv-empty-state {
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-align: center;
+            color: #6b7280;
+            font-size: clamp(15px, 1.1vw, 22px);
+        }
+        .tv-empty-state i { font-size: 2.4em; color: #ed4b56; }
+        .tv-hero.tv-hero-only { grid-template-columns: 1fr; }
+        .tv-hero.tv-hero-only .tv-hero-tiles { display: none; }
+        .tv-mode-wrapper:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            max-height: 100vh;
+            box-sizing: border-box;
+            padding: clamp(10px, .7vw, 22px);
+            overflow: auto;
+            background: #eef0f4;
+        }
+        .tv-mode-wrapper:fullscreen .tv-board { min-height: 590px; }
+        @media (max-width: 900px) {
+            /* Previsualización desplazable en teléfonos: el TV mantiene su composición. */
+            .tv-mode-wrapper:not(:fullscreen) .tv-board { min-width: 910px; }
+        }
+        @media (max-height: 650px) {
+            .tv-mode-wrapper:fullscreen .tv-board { min-height: 590px; }
+        }
+
+        /* ================= SELECTOR DE MODELOS PARA TV ================= */
+        .tv-design-controls {
+            margin: 0 clamp(12px, 1.5vw, 25px) 14px;
+            border: 1px solid var(--border);
             border-radius: 16px;
+            padding: 13px 16px;
+            background: var(--surface-color);
+            color: var(--text-main);
         }
-        .tv-mode-wrapper:fullscreen .product-img {
-            height: 150px;
+        .tv-design-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
         }
-        .tv-mode-wrapper:fullscreen .product-name {
-            font-size: 1.2rem;
-            margin-bottom: 0.25rem;
-            white-space: normal; /* En la TV si permitimos que baje de línea */
+        .tv-design-heading strong { font-size: 1rem; }
+        .tv-design-heading small { color: var(--text-muted); font-size: .77rem; }
+        .tv-design-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+        .tv-design-choice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 1px solid var(--border);
+            background: var(--bg-color);
+            color: var(--text-main);
+            border-radius: 11px;
+            padding: 12px 9px;
+            font-weight: 750;
+            cursor: pointer;
+            font-size: .88rem;
+            text-align: center;
+            transition: background .2s, border-color .2s, transform .2s;
         }
-        .tv-mode-wrapper:fullscreen .product-price {
-            font-size: 1.4rem;
+        .tv-design-choice:active { transform: scale(.98); }
+        .tv-design-choice[aria-pressed="true"] {
+            color: #fff;
+            background: #d92e3a;
+            border-color: #d92e3a;
+            box-shadow: 0 3px 8px rgba(217,46,58,.2);
         }
-        .tv-mode-wrapper:fullscreen .old-price {
-            font-size: 1rem;
+        .tv-design-hint { color: var(--text-muted); font-size: .82rem; margin-top: 11px; line-height: 1.45; }
+        /* Las preferencias se eligen antes de poner la pantalla completa. */
+        .tv-mode-wrapper:not(:fullscreen) { height: min(70vh, 820px); min-height: 440px; }
+        .tv-mode-wrapper { position: relative; }
+        .tv-board[hidden], .tv-poster-board[hidden], .tv-spotlight-board[hidden], .tv-countdown[hidden] { display: none !important; }
+        /* El contador solo se ve al INICIAR la presentación, muy pequeño en una esquina. */
+        .tv-countdown {
+            position: absolute;
+            z-index: 12;
+            right: 7px;
+            bottom: 7px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, .26);
+            color: rgba(255, 255, 255, .57);
+            font: 500 10px/1.1 Arial, sans-serif;
+            font-variant-numeric: tabular-nums;
+            pointer-events: none;
+            user-select: none;
+        }
+        .tv-mode-wrapper:not(:fullscreen) .tv-countdown { display: none !important; }
+        .tv-start-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            width: auto;
+            margin: 0;
+            padding: .65rem 1rem;
+            font-size: .9rem;
+            white-space: nowrap;
+            background: #16a34a;
+        }
+        .tv-start-btn:hover { background: #15803d; }
+
+        /* Barrido horizontal SOLO dentro del banner destacado; el diseño entero permanece fijo. */
+        .tv-banner-sweep-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 15;
+            overflow: hidden;
+            pointer-events: none;
+            border-radius: inherit;
+            isolation: isolate;
+        }
+        .tv-banner-sweep-track {
+            display: flex;
+            width: 200%;
+            height: 100%;
+            will-change: transform;
+        }
+        .tv-banner-sweep-frame {
+            position: relative;
+            flex: 0 0 50%;
+            width: 50%;
+            min-width: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        .tv-banner-sweep-frame > .tv-banner-sweep-copy {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        /* Movimiento de imágenes durante cada diapositiva, no solo al cambiarla. */
+        @keyframes tvPhotoFloat {
+            0% { transform: scale(1.015) translateX(0); }
+            100% { transform: scale(1.095) translateX(-1.6%); }
+        }
+        .tv-mode-wrapper:fullscreen .tv-hero-photo,
+        .tv-mode-wrapper:fullscreen .tv-poster-feature-photo img,
+        .tv-mode-wrapper:fullscreen .tv-spotlight-photo {
+            animation: tvPhotoFloat var(--tv-photo-seconds, 12s) linear infinite alternate;
+            transform-origin: center center;
+        }
+        @keyframes tvPromoGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.16); }
+        }
+        .tv-mode-wrapper:fullscreen .tv-promo-label,
+        .tv-mode-wrapper:fullscreen .tv-poster-promo-flag,
+        .tv-mode-wrapper:fullscreen .tv-spotlight-promo-tag,
+        .tv-mode-wrapper:fullscreen .tv-hero-promo-flag {
+            animation: tvPromoGlow 2.5s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .tv-mode-wrapper:fullscreen .tv-hero-photo,
+            .tv-mode-wrapper:fullscreen .tv-poster-feature-photo img,
+            .tv-mode-wrapper:fullscreen .tv-spotlight-photo,
+            .tv-mode-wrapper:fullscreen .tv-promo-label,
+            .tv-mode-wrapper:fullscreen .tv-poster-promo-flag,
+            .tv-mode-wrapper:fullscreen .tv-spotlight-promo-tag,
+            .tv-mode-wrapper:fullscreen .tv-hero-promo-flag { animation: none; }
+        }
+        .tv-hero-promo-flag {
+            position: absolute; z-index: 2; right: 14px; top: 12px;
+            background: #f43f46; color: #fff; font-weight: 900;
+            font-size: clamp(12px, 1.2vw, 23px); border-radius: 50px;
+            padding: .36em .72em; box-shadow: 0 4px 14px #0008;
+        }
+        .tv-hero-tile .tv-hero-promo-flag {
+            font-size: clamp(10px, .8vw, 16px); padding: .2em .55em;
+            right: 8px; top: 7px;
+        }
+        .tv-featured-old-price, .tv-tile-old-price {
+            font-weight: 750; color: #e5e7eb; text-decoration: line-through;
+            text-shadow: 0 2px 4px #000a;
+            font-size: clamp(13px, 1.1vw, 22px);
+        }
+        .tv-featured-price-wrap { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+        .tv-tile-price-wrap { display: flex; gap: 5px; align-items: baseline; flex-wrap: wrap; justify-content: flex-end; }
+        .tv-tile-old-price { font-size: clamp(10px, .8vw, 15px); }
+        .tv-poster-highlight-old { display:block; font-size: clamp(15px, 1.15vw, 24px); text-decoration:line-through; opacity:.72; }
+        .tv-spotlight-promo-tag { display: inline-block; background:#e32b3f; color:#fff; padding:.2em .5em; border-radius:8px; font-size:clamp(10px,.85vw,17px); font-weight:950; margin-bottom:3px; }
+        /* ================= MODELO 2: MENÚ PUBLICITARIO NEGRO Y AMARILLO ================= */
+        .tv-poster-board {
+            width: 100%;
+            height: 100%;
+            min-height: 610px;
+            display: grid;
+            grid-template-columns: 31% minmax(0, 69%);
+            border-radius: clamp(14px, 1vw, 22px);
+            overflow: hidden;
+            color: #fff;
+            font-family: inherit;
+            background: #101014;
+            box-shadow: 0 6px 18px rgba(0,0,0,.2);
+        }
+        .tv-poster-feature {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            background-color: #ffd22a;
+            background-image: radial-gradient(circle at 40% 35%, #ffe47b 0%, transparent 55%),
+                repeating-linear-gradient(-45deg, transparent 0 40px, rgba(147,109,0,.065) 40px 42px);
+            color: #171309;
+        }
+        .tv-poster-brand {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: clamp(14px, 1.6vw, 34px) 12px clamp(8px, 1vw, 18px);
+            font-weight: 950;
+            line-height: 1;
+            font-size: clamp(25px, 2.65vw, 58px);
+            letter-spacing: -.05em;
+        }
+        .tv-poster-brand i { font-size: .8em; color: #18110a; }
+        .tv-poster-feature-photo {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+            margin: clamp(8px, .75vw, 15px);
+            border-radius: clamp(14px, 1.15vw, 25px);
+            background: #efb928;
+        }
+        .tv-poster-feature-photo img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .tv-poster-feature-photo::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg,rgba(0,0,0,.4), transparent 43%);
+            pointer-events: none;
+        }
+        .tv-poster-feature-photo .tv-poster-feature-tag {
+            position: absolute; z-index: 1; top: 15px; left: 13px;
+            font-size: clamp(12px, .95vw, 19px);
+            font-weight: 900; padding: .4em .9em; background: #111; color: #ffd83b;
+            border-radius: 50px;
+        }
+        .tv-poster-highlight {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 4px 16px clamp(17px, 2vw, 43px);
+        }
+        .tv-poster-highlight h2 {
+            color: #19130b;
+            font-size: clamp(25px, 3.0vw, 65px);
+            letter-spacing: -.04em;
+            line-height: .99;
+            font-weight: 1000;
+            overflow-wrap: anywhere;
+        }
+        .tv-poster-highlight-price {
+            display: block;
+            font-size: clamp(45px, 5.1vw, 105px);
+            font-weight: 1000;
+            letter-spacing: -.06em;
+            line-height: 1.1;
+            color: #101010;
+            white-space: nowrap;
+        }
+        .tv-poster-menu-area {
+            min-width: 0;
+            min-height: 0;
+            padding: clamp(14px, 1.3vw, 30px);
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 80% 10%,rgba(255,255,255,.06),transparent 35%),
+                        linear-gradient(150deg,#1c1c1c 0%,#080809 85%);
+        }
+        .tv-poster-menu-heading {
+            flex-shrink: 0;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 1px 5px clamp(10px, 1.2vw, 24px);
+            border-bottom: 2px solid rgba(255,210,42,.5);
+        }
+        .tv-poster-menu-heading h2 {
+            color: #ffd22a;
+            font-weight: 950;
+            font-size: clamp(25px, 2.5vw, 52px);
+            line-height: 1.07;
+            letter-spacing: -.035em;
+        }
+        .tv-poster-menu-heading small { font-size: clamp(11px,.9vw,18px); color: #fff9; font-weight: 750; }
+        .tv-poster-menu-grid {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: repeat(2, minmax(0, 1fr));
+            column-gap: clamp(8px, 1vw, 23px);
+            row-gap: clamp(10px, 1.15vw, 25px);
+            padding-top: clamp(14px, 1.2vw, 26px);
+        }
+        .tv-poster-product {
+            min-width: 0; min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 2px;
+            border-bottom: 1px solid rgba(255,255,255,.15);
+        }
+        .tv-poster-product-photo {
+            flex: 1; min-height: 0; position: relative;
+            overflow: hidden;
+            border-radius: clamp(7px, .5vw, 13px);
+            background: #292929;
+        }
+        .tv-poster-product-photo img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .tv-poster-promo-flag {
+            position: absolute; top: 7px; left: 7px;
+            padding: .15em .55em;
+            border-radius: 9px;
+            color: #111; background: #ffd22a;
+            font-size: clamp(10px,.7vw,14px);
+            font-weight: 950;
+        }
+        .tv-poster-product-name {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            overflow: hidden;
+            min-height: 1.2em;
+            margin: clamp(6px,.55vw,12px) 0 clamp(4px,.4vw,8px);
+            font-size: clamp(13px, 1.22vw, 26px);
+            font-weight: 850;
+            line-height: 1.14;
+            overflow-wrap: anywhere;
+        }
+        .tv-poster-product-prices {
+            display: flex; flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: baseline; gap: 3px 8px;
+        }
+        .tv-poster-product-prices s { color: #aaa; font-size: clamp(10px, .85vw, 18px); }
+        .tv-poster-product-prices strong {
+            color: #ffd22a;
+            font-size: clamp(20px, 1.6vw, 36px);
+            font-weight: 950;
+            white-space: nowrap;
+        }
+        .tv-poster-footer {
+            flex-shrink: 0;
+            margin-top: clamp(10px, 1.1vw, 24px);
+            padding-top: clamp(6px, .65vw, 14px);
+            border-top: 1px solid #ffffff25;
+            display: flex; justify-content: space-between;
+            color: #fff9; font-weight: 700;
+            font-size: clamp(11px,.8vw,16px);
+        }
+        .tv-poster-empty { grid-column: 1 / -1; align-self: center; text-align: center; color: #ffe176; font-size: clamp(18px,1.5vw,28px); }
+        @media (max-width: 900px) {
+            .tv-design-options { grid-template-columns: 1fr; }
+            .tv-design-heading { align-items: flex-start; flex-direction: column; }
+            .tv-mode-wrapper:not(:fullscreen) .tv-poster-board { min-width: 910px; }
+        }
+        @media (max-height: 650px) {
+            .tv-mode-wrapper:fullscreen .tv-poster-board { min-height: 590px; }
+        }
+
+
+        /* ============== MODELO 3: ANUNCIO DESTACADO AMARILLO Y NEGRO ============== */
+        .tv-spotlight-board[hidden] { display: none !important; }
+        .tv-spotlight-board {
+            display: grid;
+            grid-template-columns: 27% minmax(0, 73%);
+            width: 100%; height: 100%; min-height: 610px;
+            border: 8px solid #211c20;
+            border-radius: clamp(12px, 1vw, 20px);
+            overflow: hidden;
+            background: #121214;
+            color: white;
+            box-shadow: 0 7px 20px #0003;
+        }
+        .tv-spotlight-sidebar {
+            min-width: 0; min-height: 0;
+            display: flex; flex-direction: column;
+            padding: clamp(12px, 1.25vw, 29px);
+            color: #111;
+            background-color: #ffd02b;
+            background-image: radial-gradient(circle at center, #ffe76d 0%, transparent 55%),
+                repeating-linear-gradient(135deg, transparent 0 36px, #00000007 36px 39px);
+        }
+        .tv-spotlight-brand {
+            font-size: clamp(20px, 1.9vw, 40px);
+            font-weight: 1000;
+            text-align: center;
+            line-height: 1.05;
+            padding-bottom: clamp(6px, .75vw, 16px);
+            border-bottom: 3px solid #17120e;
+            flex-shrink: 0;
+        }
+        .tv-spotlight-side-list {
+            display: grid; grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: clamp(7px, .85vw, 19px);
+            flex: 1; min-height: 0;
+            padding-top: clamp(10px, 1vw, 20px);
+        }
+        .tv-spotlight-small {
+            min-height: 0; min-width: 0;
+            display: flex; align-items: center;
+            gap: clamp(8px, .7vw, 16px);
+            border-bottom: 2px dashed #16110e4d;
+        }
+        .tv-spotlight-small-image {
+            height: min(85%, 200px); width: 40%; flex-shrink: 0;
+            border-radius: clamp(7px, .7vw, 14px);
+            object-fit: cover;
+            box-shadow: 0 4px 12px #4935002e;
+        }
+        .tv-spotlight-small-info { min-width: 0; }
+        .tv-spotlight-small-name {
+            font-weight: 950; font-size: clamp(14px, 1.42vw, 30px);
+            line-height: 1.12; overflow-wrap: anywhere;
+        }
+        .tv-spotlight-small-price {
+            font-weight: 1000; font-size: clamp(25px, 2.5vw, 53px);
+            line-height: 1.2; letter-spacing: -.035em;
+        }
+        .tv-spotlight-small-old { font-size: clamp(11px, .88vw, 18px); text-decoration: line-through; opacity: .68; }
+        .tv-spotlight-side-empty { align-self: center; text-align: center; font-size: clamp(17px,1.4vw,28px); font-weight: 750; }
+        .tv-spotlight-main {
+            position: relative; overflow: hidden; min-width: 0; min-height: 0;
+            isolation: isolate;
+            background: radial-gradient(ellipse at 80% 45%, #343130, #090909 80%);
+        }
+        .tv-spotlight-photo {
+            position: absolute; z-index: -2; inset: 0;
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .tv-spotlight-main::before {
+            content: ''; position: absolute; z-index: -1; inset: 0;
+            background: linear-gradient(90deg, #070708f5 0%, #070708dc 23%, #08080870 56%, #08080810 100%),
+                        linear-gradient(0deg, #000d, transparent 39%);
+        }
+        .tv-spotlight-text {
+            position: absolute;
+            top: clamp(35px, 5vw, 120px); left: clamp(24px, 3vw, 78px);
+            width: 65%; z-index: 1;
+        }
+        .tv-spotlight-kicker {
+            display: inline-flex; align-items: center;
+            font-weight: 1000; text-transform: uppercase; letter-spacing: .07em;
+            font-size: clamp(17px, 1.55vw, 34px);
+            color: #ffd12b; margin-bottom: clamp(15px, 1.5vw, 34px);
+        }
+        .tv-spotlight-headline {
+            max-width: 100%; font-size: clamp(42px, 5vw, 110px);
+            font-weight: 1000; line-height: .98; letter-spacing: -.05em;
+            text-shadow: 1px 3px 13px #000a; overflow-wrap: anywhere;
+        }
+        .tv-spotlight-price {
+            display: inline-block;
+            padding: clamp(9px, .9vw, 20px) clamp(18px, 1.3vw, 31px);
+            margin-top: clamp(18px, 2.25vw, 52px);
+            background: #ffd02b; color: #0c0a07;
+            border-radius: clamp(12px, .9vw, 22px);
+            font-size: clamp(42px, 4.2vw, 90px); font-weight: 1000;
+            line-height: 1; white-space: nowrap; box-shadow: 0 7px 17px #0006;
+        }
+        .tv-spotlight-old-price { margin-top: 12px; font-size: clamp(17px, 1.25vw, 26px); color: #ffffffbf; }
+        .tv-spotlight-bottom {
+            position: absolute; left: clamp(24px, 3vw, 78px); bottom: clamp(19px, 2.6vw, 62px);
+            display: flex; align-items: center; gap: 12px;
+            font-size: clamp(16px, 1.45vw, 31px); font-weight: 900;
+            text-shadow: 0 2px 9px #000;
+        }
+        .tv-spotlight-bottom i { color: #ffd02b; font-size: 1.5em; }
+        .tv-spotlight-no-products {
+            position: absolute; top: 45%; left: 7%; right: 7%;
+            text-align: center; font-size: clamp(35px, 4vw, 75px); font-weight: 900;
+        }
+        .tv-timing-control {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+            border-top: 1px solid var(--border); margin-top: 14px; padding-top: 13px;
+        }
+        .tv-timing-control label { font-size: .9rem; font-weight: 800; }
+        .tv-timing-control input {
+            width: 90px; padding: 9px 10px;
+            border: 1px solid var(--border); border-radius: 10px;
+            background: var(--bg-color); color: var(--text-main);
+            font-size: 1rem; font-weight: 800;
+        }
+        .tv-timing-control small { color: var(--text-muted); }
+        .tv-select-all {
+            background: transparent; border: 1px solid var(--border);
+            border-radius: 9px; padding: 7px 12px; color: var(--text-main);
+            font-size: .8rem; font-weight: 750; cursor: pointer;
+        }
+        .tv-design-choice[aria-pressed="true"]::before { content: '✓ '; font-weight: 1000; }
+        @media (max-width: 900px) {
+            .tv-mode-wrapper:not(:fullscreen) .tv-spotlight-board { min-width: 910px; }
+        }
+        @media (max-height: 650px) {
+            .tv-mode-wrapper:fullscreen .tv-spotlight-board { min-height: 590px; }
         }
 
         /* Order Cards */
@@ -942,6 +1660,37 @@
             white-space: nowrap;
         }
 
+        /* Las tarjetas deben ser HIJAS DIRECTAS de la grilla. Durante el cambio
+           solo se superpone una copia de la página anterior: nunca se deja un
+           contenedor auxiliar dentro del grid al terminar la animación. */
+        .tv-product-grid, .tv-poster-menu-grid {
+            position: relative;
+            isolation: isolate;
+        }
+        .tv-grid-swap-page {
+            box-sizing: border-box;
+            display: grid;
+            position: absolute !important;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            z-index: 5;
+            margin: 0;
+            padding: 0;
+            pointer-events: none;
+            will-change: clip-path;
+            backface-visibility: hidden;
+        }
+        .tv-grid-swap-page img, .tv-banner-sweep-frame img { opacity: 1; }
+        @media (prefers-reduced-motion: reduce) {
+            .tv-grid-swap-page, .tv-banner-sweep-track { will-change: auto; }
+        }
+        /* El navegador muestra Instalar solo cuando la instalación es posible. */
+        #pwaInstallBtn[hidden] { display: none !important; }
+        .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -955,6 +1704,7 @@
             <i class="ph-fill ph-hamburger"></i> FoodApp
         </div>
         <div class="header-actions">
+            <button id="pwaInstallBtn" type="button" hidden aria-label="Instalar FoodApp" title="Instalar FoodApp"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="sr-only">Instalar FoodApp</span></button>
             <button id="logoutBtn" onclick="logout()" style="display: none;"><i class="ph ph-sign-out"></i></button>
             <button id="themeToggle" onclick="toggleTheme()"><i class="ph ph-moon"></i></button>
         </div>
@@ -1254,28 +2004,85 @@
             <div class="back-header">
                 <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
                 <h2 style="flex: 1;">Menú Digital (TV)</h2>
-                <!-- Botón de FullScreen -->
-                <button class="checkout-btn" style="margin: 0; padding: 0.5rem 1rem; width: auto; font-size: 0.9rem;" onclick="toggleFullScreen('tv-content-wrapper')">
-                    <i class="ph-fill ph-corners-out"></i> Fullscreen
+                <!-- Iniciar la presentación en pantalla completa (Esc para regresar). -->
+                <button type="button" id="tvStartButton" class="checkout-btn tv-start-btn" onclick="startTvPresentation()">
+                    <i class="ph-fill ph-play"></i> Iniciar presentación
                 </button>
             </div>
             
-            <div id="tv-content-wrapper" class="tv-mode-wrapper">
-                <div class="carousel-container tv-carousel-container">
-                    <div class="carousel-track" id="tvCarouselTrack">
-                        <!-- Banners dinámicos TV -->
+            <div class="tv-design-controls" aria-label="Elegir diseño del menú digital">
+                <div class="tv-design-heading">
+                    <strong><i class="ph-fill ph-palette"></i> Diseño que deseas mostrar en TV</strong>
+                    <small>Se guarda automáticamente en este dispositivo</small>
+                </div>
+                <div class="tv-design-options" role="group" aria-label="Activar modelos de pantalla TV">
+                    <button type="button" class="tv-design-choice" data-tv-design="mosaic" aria-pressed="false" onclick="setTvPresentationMode('mosaic')"><i class="ph ph-squares-four"></i> Modelo 1 · Moderno</button>
+                    <button type="button" class="tv-design-choice" data-tv-design="poster" aria-pressed="false" onclick="setTvPresentationMode('poster')"><i class="ph ph-layout"></i> Modelo 2 · Menú amarillo</button>
+                    <button type="button" class="tv-design-choice" data-tv-design="spotlight" aria-pressed="false" onclick="setTvPresentationMode('spotlight')"><i class="ph ph-image-square"></i> Modelo 3 · Destacado</button>
+                </div>
+                <div class="tv-timing-control">
+                    <button type="button" class="tv-select-all" id="tvSelectAllBtn" onclick="selectAllTvModels()"><i class="ph ph-checks"></i> Activar todos</button>
+                    <label for="tvSlideSeconds">Cambio de modelos:</label>
+                    <input type="number" id="tvSlideSeconds" min="3" max="300" step="1" value="12" onchange="setTvSlideSeconds(this.value)" aria-describedby="tvDurationHelp">
+                    <span>segundos</span>
+                    <small id="tvDurationHelp">Con 2 o 3 modelos activos · El banner cambia sus productos cada 10 s</small>
+                </div>
+                <p class="tv-design-hint" id="tvDesignHint" aria-live="polite">Elige uno o varios diseños y pulsa Iniciar presentación. Usa Esc para salir.</p>
+            </div>
+
+            <div id="tv-content-wrapper" class="tv-mode-wrapper" aria-label="Menú digital para televisión">
+                <div class="tv-board" id="tvModernBoard">
+                    <!-- Banner mosaico: solamente productos marcados como activos -->
+                    <section class="tv-hero" id="tvHeroBanner" aria-label="Banner de productos activos">
+                        <div class="tv-hero-featured" id="tvHeroMain"></div>
+                        <div class="tv-hero-tiles" id="tvHeroTiles"></div>
+                    </section>
+                    <!-- Pantalla dividida: ofertas a la izquierda y menú a la derecha -->
+                    <div class="tv-board-split">
+                        <section class="tv-panel" aria-label="Promociones activas">
+                            <div class="tv-panel-header">
+                                <h2 class="tv-panel-title"><i class="ph-fill ph-fire tv-section-fire"></i> Promociones Activas</h2>
+                                <span id="tvPromoPageCount" class="tv-page-count"></span>
+                            </div>
+                            <div class="tv-product-grid tv-promo-grid" id="tvPromoGrid"></div>
+                        </section>
+                        <section class="tv-panel" aria-label="Menú activo">
+                            <div class="tv-panel-header">
+                                <h2 class="tv-panel-title">Menú Activo / Los Más Pedidos</h2>
+                                <span id="tvMenuPageCount" class="tv-page-count"></span>
+                            </div>
+                            <div class="tv-product-grid tv-menu-grid" id="tvTopOrdersGrid"></div>
+                        </section>
                     </div>
                 </div>
-
-                <h2 class="section-title tv-title">Promociones Activas <i class="ph-fill ph-fire" style="color: var(--primary)"></i></h2>
-                <div class="product-grid tv-grid" id="tvPromoGrid">
-                    <!-- Productos Promo TV -->
+                <!-- Modelo 2: franja publicitaria amarilla + catálogo oscuro de 8 productos. -->
+                <div class="tv-poster-board" id="tvPosterBoard" hidden aria-label="Menú publicitario amarillo y negro">
+                    <aside class="tv-poster-feature">
+                        <div class="tv-poster-brand"><i class="ph-fill ph-hamburger"></i> FoodApp</div>
+                        <div class="tv-poster-feature-photo" id="tvPosterFeaturedPhoto"></div>
+                        <div class="tv-poster-highlight" id="tvPosterHighlight"></div>
+                    </aside>
+                    <section class="tv-poster-menu-area" aria-label="Productos disponibles">
+                        <div class="tv-poster-menu-heading">
+                            <h2>Menú y Ofertas</h2>
+                            <small id="tvPosterPageCount"></small>
+                        </div>
+                        <div class="tv-poster-menu-grid" id="tvPosterItems"></div>
+                        <div class="tv-poster-footer">
+                            <span>¡Elige tus favoritos!</span>
+                            <span id="tvPosterActiveCount">Productos disponibles</span>
+                        </div>
+                    </section>
                 </div>
-
-                <h2 class="section-title tv-title">Los Más Pedidos</h2>
-                <div class="product-grid tv-grid" id="tvTopOrdersGrid">
-                    <!-- Top Productos TV -->
+                <!-- Modelo 3: franja amarilla de menú y anuncio principal destacado. -->
+                <div class="tv-spotlight-board" id="tvSpotlightBoard" hidden aria-label="Anuncio destacado y menú lateral">
+                    <aside class="tv-spotlight-sidebar">
+                        <div class="tv-spotlight-brand"><i class="ph-fill ph-hamburger"></i> FoodApp <span style="display:block;font-size:.55em;margin-top:5px">OTROS FAVORITOS</span></div>
+                        <div class="tv-spotlight-side-list" id="tvSpotlightSideItems"></div>
+                    </aside>
+                    <section class="tv-spotlight-main" id="tvSpotlightMain" aria-label="Producto destacado"></section>
                 </div>
+                <div id="tvCountdown" class="tv-countdown" hidden role="timer" aria-live="off" title="Segundos hasta la siguiente diapositiva"></div>
             </div>
         </section>
 
@@ -1481,10 +2288,42 @@
             if (document.getElementById('view-admin-orders').classList.contains('active')) renderOrdersAdmin();
             if (document.getElementById('view-admin-stats').classList.contains('active')) renderDashboard();
             if (document.getElementById('view-my-orders').classList.contains('active')) renderUserOrders();
+            // Una sincronización debe actualizar también las tarjetas del administrador.
+            if (document.getElementById('view-admin-products').classList.contains('active')) renderAdminProducts();
             
             console.log("¡Sincronización exitosa con Supabase completada!");
         } catch (error) {
             console.error("Error crítico al sincronizar con Supabase:", error);
+        }
+    }
+
+    // Revisión ligera de productos: muestra promociones nuevas en otras pestañas/dispositivos.
+    let productPollRunning = false;
+    async function pollProducts() {
+        if (productPollRunning) return;
+        productPollRunning = true;
+        try {
+            const { data, error } = await supabaseClient.from('products')
+                .select('id, name, image, orders_count, active, price, old_price, promo, promo_start, promo_end');
+            if (error) throw error;
+            if (!data) return;
+            const normalize = value => value == null ? null : String(value);
+            const sameAmount = (a, b) => a == null || b == null ? a == null && b == null : Number(a) === Number(b);
+            const changed = data.length !== products.length || data.some(row => {
+                const current = products.find(p => String(p.id) === String(row.id));
+                return !current || current.active !== row.active || current.promo !== row.promo ||
+                    current.name !== row.name || current.image !== row.image ||
+                    !sameAmount(current.orders, row.orders_count) ||
+                    !sameAmount(current.price, row.price) ||
+                    !sameAmount(current.oldPrice, row.old_price) ||
+                    normalize(current.promoStart) !== normalize(row.promo_start) ||
+                    normalize(current.promoEnd) !== normalize(row.promo_end);
+            });
+            if (changed) await syncConSupabase();
+        } catch (error) {
+            console.error('No se pudieron revisar las promociones:', error);
+        } finally {
+            productPollRunning = false;
         }
     }
 
@@ -1505,13 +2344,35 @@
         // Listener MAESTRO para notificaciones cruzadas (entre pestañas/ventanas)
         window.addEventListener('storage', (e) => {
             if (e.key === 'foodapp_trigger_sync') {
-                // Al detectar que otra pestaña hizo algo, solo ejecutamos la revisión ligera
-                pollOrders(); 
+                pollOrders();
+                pollProducts();
+            }
+            if (e.key === tvSelectedStorageKey || e.key === tvDesignStorageKey) {
+                tvEnabledModels = loadTvEnabledModels();
+                tvLayoutSlideIndex = 0;
+                tvSlideIndex = 0;
+                tvBannerIndex = 0;
+                tvLastAdvanceAt = Date.now();
+                tvBannerLastAdvanceAt = Date.now();
+                if (document.getElementById('view-admin-tv').classList.contains('active')) renderTvView();
+            }
+            if (e.key === tvSecondsStorageKey) {
+                tvSlideSeconds = loadTvSlideSeconds();
+                tvLastAdvanceAt = Date.now();
+                updateTvDesignControls();
             }
         });
 
         // NUEVO: Intervalo de 10 segundos para verificar pedidos en tiempo real
         setInterval(pollOrders, 10000);
+        // Los productos y promociones se revisan cada 20 segundos (sin descargar imágenes).
+        setInterval(pollProducts, 20000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                tvLastAdvanceAt = Date.now();
+                pollProducts();
+            }
+        });
 
         // Auto scroll carouseles
         setInterval(() => {
@@ -1522,13 +2383,38 @@
                 else track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
             }
 
-            const tvTrack = document.getElementById('tvCarouselTrack');
-            if(tvTrack && document.getElementById('view-admin-tv').classList.contains('active')) {
-                const scrollAmount = tvTrack.clientWidth;
-                if (tvTrack.scrollLeft + tvTrack.clientWidth >= tvTrack.scrollWidth - 10) tvTrack.scrollTo({ left: 0, behavior: 'smooth' });
-                else tvTrack.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-            }
         }, 10000);
+
+        // La animación de los banners es independiente del cambio de modelos de TV.
+        document.addEventListener('fullscreenchange', handleTvFullscreenChange);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' &&
+                document.fullscreenElement === document.getElementById('tv-content-wrapper')) {
+                document.exitFullscreen().catch(error => console.warn('Error al salir de pantalla completa:', error));
+            }
+        });
+        setInterval(() => {
+            if (document.hidden || !document.getElementById('view-admin-tv').classList.contains('active')) return;
+            // La rotación de las listas funciona incluso en la previsualización del administrador.
+            // No activa el contador de diapositivas ni cambia de modelo.
+            if (!tvTransitionInProgress && !tvMenuTransitionInProgress &&
+                Date.now() - tvMenuLastAdvanceAt >= tvMenuPageSeconds * 1000) {
+                advanceTvMenuPages();
+            }
+            if (!tvPresentationRunning ||
+                document.fullscreenElement !== document.getElementById('tv-content-wrapper')) return;
+            // Con dos o tres modelos elegidos, cambia automáticamente el diseño TV.
+            if (tvEnabledModels.length >= 2 && !tvTransitionInProgress &&
+                Date.now() - tvLastAdvanceAt >= tvSlideSeconds * 1000) {
+                advanceTvPresentation();
+            }
+            // Con uno, dos o tres modelos, las FOTOS del banner destacado se deslizan por separado.
+            if (!tvTransitionInProgress && !tvBannerTransitionInProgress &&
+                Date.now() - tvBannerLastAdvanceAt >= getTvBannerCycleSeconds() * 1000) {
+                advanceTvBanner();
+            }
+            updateTvCountdown();
+        }, 250);
 
         // Cronómetros En Proceso
         setInterval(() => {
@@ -1724,7 +2610,7 @@
         if(viewName === 'admin-orders') renderOrdersAdmin();
         if(viewName === 'admin-users') renderAdminUsers();
         if(viewName === 'admin-products') renderAdminProducts(); 
-        if(viewName === 'admin-tv') renderTvView(); 
+        if(viewName === 'admin-tv') { tvSlideIndex = 0; tvLayoutSlideIndex = 0; tvBannerIndex = 0; tvLastAdvanceAt = Date.now(); tvBannerLastAdvanceAt = Date.now(); tvMenuLastAdvanceAt = Date.now(); renderTvView(); } 
     }
 
     // --- RENDERIZADO UI DE PRODUCTOS ---
@@ -1820,42 +2706,567 @@
         `).join('');
     }
 
-    function renderTvView() {
-        const promos = products.map(getEffectiveProductData).filter(p => p.promo && p.active).slice(0, 8);
-        document.getElementById('tvPromoGrid').innerHTML = promos.map(p => generateProductCard(p, 'tv-promo')).join('');
+    // --- MENÚ DIGITAL TV: preferencias guardadas por dispositivo ---
+    const tvDesignStorageKey = 'foodapp_tv_display_mode'; // Compatibilidad con versiones anteriores.
+    const tvSelectedStorageKey = 'foodapp_tv_selected_models';
+    const tvSecondsStorageKey = 'foodapp_tv_slide_seconds';
+    const tvModelOptions = ['mosaic', 'poster', 'spotlight'];
 
-        const top = products.filter(p => p.active).map(getEffectiveProductData).sort((a,b) => b.orders - a.orders).slice(0, 8);
-        document.getElementById('tvTopOrdersGrid').innerHTML = top.map(p => generateProductCard(p, 'tv-top')).join('');
+    function loadTvEnabledModels() {
+        try {
+            const stored = localStorage.getItem(tvSelectedStorageKey);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    const selected = tvModelOptions.filter(mode => parsed.includes(mode));
+                    if (selected.length) return selected;
+                }
+            }
+        } catch (err) { console.warn('Configuración de modelos TV inválida:', err); }
+        const legacy = localStorage.getItem(tvDesignStorageKey);
+        if (legacy === 'both') return ['mosaic', 'poster'];
+        if (tvModelOptions.includes(legacy)) return [legacy];
+        return ['mosaic'];
+    }
+    function loadTvSlideSeconds() {
+        const value = Number(localStorage.getItem(tvSecondsStorageKey));
+        return Number.isInteger(value) && value >= 3 && value <= 300 ? value : 12;
+    }
 
-        const track = document.getElementById('tvCarouselTrack');
-        const carouselItems = products.filter(p => p.active).map(getEffectiveProductData).slice(0, 5);
-        
-        if(carouselItems.length === 0) {
-            track.innerHTML = `<div class="banner banner-bg-1"><div class="banner-content"><h3>¡Bienvenidos a FoodApp!</h3></div></div>`;
+    let tvSlideIndex = 0; // Página de productos en las secciones del menú.
+    let tvBannerIndex = 0; // Producto grande: rotación separada del modelo de TV.
+    const tvBannerSeconds = 10;
+    const tvMenuPageSeconds = 10; // Las tarjetas inferiores cambian independientemente del banner grande.
+    let tvMenuLastAdvanceAt = Date.now();
+    let tvBannerLastAdvanceAt = Date.now();
+    let tvBannerTransitionInProgress = false;
+    let tvMenuTransitionInProgress = false;
+    let tvLayoutSlideIndex = 0;
+    let tvEnabledModels = loadTvEnabledModels();
+    let tvSlideSeconds = loadTvSlideSeconds();
+    let tvLastAdvanceAt = Date.now();
+    let tvPresentationRunning = false;
+    let tvTransitionInProgress = false;
+
+    // Asegurar que cada modelo tenga tiempo de mostrar al menos un barrido de sus fotos.
+    // Con un modelo fijo se respeta el ciclo normal de 10 segundos.
+    function getTvBannerCycleSeconds() {
+        return tvEnabledModels.length >= 2 ? Math.min(tvBannerSeconds, tvSlideSeconds / 2) : tvBannerSeconds;
+    }
+
+    function updateTvCountdown() {
+        const timer = document.getElementById('tvCountdown');
+        if (!timer) return;
+        const wrapper = document.getElementById('tv-content-wrapper');
+        const running = tvPresentationRunning && document.fullscreenElement === wrapper && tvEnabledModels.length >= 2;
+        timer.hidden = !running;
+        if (!running) return;
+        const secondsLeft = Math.max(1, Math.ceil((tvSlideSeconds * 1000 - (Date.now() - tvLastAdvanceAt)) / 1000));
+        timer.textContent = `${secondsLeft}s`;
+        timer.setAttribute('aria-label', `Próxima diapositiva en ${secondsLeft} segundos`);
+        wrapper.style.setProperty('--tv-photo-seconds', `${getTvBannerCycleSeconds()}s`);
+    }
+
+    async function startTvPresentation() {
+        const wrapper = document.getElementById('tv-content-wrapper');
+        if (!wrapper || typeof wrapper.requestFullscreen !== 'function') {
+            showToast('Pantalla completa no disponible en este navegador');
+            return;
+        }
+        // La presentación en pantalla completa comienza desde el primer modelo y la primera página.
+        tvLayoutSlideIndex = 0;
+        tvSlideIndex = 0;
+        tvBannerIndex = 0;
+        tvLastAdvanceAt = Date.now();
+        tvBannerLastAdvanceAt = Date.now();
+        tvMenuLastAdvanceAt = Date.now();
+        renderTvView();
+        try {
+            await wrapper.requestFullscreen();
+            // No activar el temporizador hasta que el navegador confirme el fullscreen.
+            tvPresentationRunning = document.fullscreenElement === wrapper;
+            tvLastAdvanceAt = Date.now();
+            tvBannerLastAdvanceAt = Date.now();
+            tvMenuLastAdvanceAt = Date.now();
+            updateTvCountdown();
+        } catch (error) {
+            tvPresentationRunning = false;
+            updateTvCountdown();
+            console.error('No se pudo iniciar la pantalla completa:', error);
+            showToast('No se pudo iniciar la presentación en pantalla completa');
+        }
+    }
+
+
+    function updateTvDesignControls() {
+        document.querySelectorAll('[data-tv-design]').forEach(button => {
+            button.setAttribute('aria-pressed', String(tvEnabledModels.includes(button.dataset.tvDesign)));
+        });
+        const secondsInput = document.getElementById('tvSlideSeconds');
+        if (secondsInput && document.activeElement !== secondsInput) secondsInput.value = tvSlideSeconds;
+        const allBtn = document.getElementById('tvSelectAllBtn');
+        if (allBtn) allBtn.innerHTML = tvEnabledModels.length === tvModelOptions.length
+            ? '<i class="ph ph-check-circle"></i> Todos activados'
+            : '<i class="ph ph-checks"></i> Activar todos';
+        const hint = document.getElementById('tvDesignHint');
+        if (hint) hint.textContent = tvEnabledModels.length >= 2
+            ? `Los ${tvEnabledModels.length} modelos cambian cada ${tvSlideSeconds} s. Banner y menús rotan independientemente.`
+            : `${tvEnabledModels.length} modelo${tvEnabledModels.length === 1 ? '' : 's'}: sin cambio de diseño. Banner y páginas del menú rotan cada ${tvMenuPageSeconds} s.`;
+    }
+
+    function setTvPresentationMode(mode) {
+        if (!tvModelOptions.includes(mode)) return;
+        if (tvEnabledModels.includes(mode)) {
+            if (tvEnabledModels.length === 1) {
+                showToast('Debe quedar al menos un modelo activo');
+                return;
+            }
+            tvEnabledModels = tvEnabledModels.filter(m => m !== mode);
+        } else {
+            tvEnabledModels = tvModelOptions.filter(m => tvEnabledModels.includes(m) || m === mode);
+        }
+        localStorage.setItem(tvSelectedStorageKey, JSON.stringify(tvEnabledModels));
+        tvLayoutSlideIndex = 0;
+        tvSlideIndex = 0;
+        tvBannerIndex = 0;
+        tvLastAdvanceAt = Date.now();
+        tvBannerLastAdvanceAt = Date.now();
+        tvMenuLastAdvanceAt = Date.now();
+        renderTvView();
+        updateTvCountdown();
+        showToast(tvEnabledModels.length >= 2 ? 'Presentación automática activa' : 'Modelo fijo, banner animado');
+    }
+
+    function selectAllTvModels() {
+        tvEnabledModels = [...tvModelOptions];
+        localStorage.setItem(tvSelectedStorageKey, JSON.stringify(tvEnabledModels));
+        tvLayoutSlideIndex = 0;
+        tvSlideIndex = 0;
+        tvBannerIndex = 0;
+        tvLastAdvanceAt = Date.now();
+        tvBannerLastAdvanceAt = Date.now();
+        tvMenuLastAdvanceAt = Date.now();
+        renderTvView();
+        showToast('Los 3 modelos están activos');
+    }
+
+    function setTvSlideSeconds(rawSeconds) {
+        const seconds = Number(rawSeconds);
+        const input = document.getElementById('tvSlideSeconds');
+        if (!Number.isInteger(seconds) || seconds < 3 || seconds > 300) {
+            if (input) input.value = tvSlideSeconds;
+            showToast('Ingresa un tiempo de 3 a 300 segundos');
+            return;
+        }
+        tvSlideSeconds = seconds;
+        localStorage.setItem(tvSecondsStorageKey, String(seconds));
+        tvLastAdvanceAt = Date.now();
+        updateTvDesignControls();
+        updateTvCountdown();
+        showToast(`Cambio entre modelos: ${seconds} segundos (con 2 o 3 modelos)`);
+    }
+
+    // El temporizador de modelos se activa al seleccionar dos o tres diseños.
+    // No se aplica ningún barrido al diseño completo: ese movimiento pertenece a las imágenes.
+    function advanceTvPresentation() {
+        if (tvTransitionInProgress || tvBannerTransitionInProgress || tvMenuTransitionInProgress || tvEnabledModels.length < 2) return;
+        tvTransitionInProgress = true;
+        try {
+            tvLayoutSlideIndex = (tvLayoutSlideIndex + 1) % tvEnabledModels.length;
+            tvBannerIndex = 0;
+            renderTvView();
+        } finally {
+            tvLastAdvanceAt = Date.now();
+            tvBannerLastAdvanceAt = Date.now();
+            tvTransitionInProgress = false;
+            updateTvCountdown();
+        }
+    }
+
+    // Barrido de derecha a izquierda limitado al banner principal del modelo actual.
+    // La fotografía y sus textos (nombre, promo, precios) viajan juntos; el menú queda fijo.
+    async function advanceTvBanner() {
+        if (tvBannerTransitionInProgress || tvTransitionInProgress || !tvPresentationRunning) return;
+        const wrapper = document.getElementById('tv-content-wrapper');
+        if (document.fullscreenElement !== wrapper) return;
+        const activeCount = products.filter(p => p.active === true).length;
+        if (activeCount < 2) {
+            tvBannerLastAdvanceAt = Date.now();
+            return;
+        }
+        const mode = tvEnabledModels[tvLayoutSlideIndex % tvEnabledModels.length];
+        const banner = mode === 'poster'
+            ? document.querySelector('#tvPosterBoard .tv-poster-feature')
+            : mode === 'spotlight'
+                ? document.getElementById('tvSpotlightMain')
+                : document.getElementById('tvHeroMain');
+        if (!banner) return;
+        tvBannerTransitionInProgress = true;
+        let overlay;
+        try {
+            const snapshot = () => {
+                const copy = banner.cloneNode(true);
+                copy.removeAttribute('id');
+                copy.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+                copy.classList.add('tv-banner-sweep-copy');
+                return copy;
+            };
+            const previous = snapshot();
+            tvBannerIndex += 1;
+            renderTvBannerOnly(); // Sin volver a construir las tarjetas inferiores.
+            const next = snapshot();
+            overlay = document.createElement('div');
+            overlay.className = 'tv-banner-sweep-overlay';
+            const track = document.createElement('div');
+            track.className = 'tv-banner-sweep-track';
+            for (const copy of [previous, next]) {
+                const frame = document.createElement('div');
+                frame.className = 'tv-banner-sweep-frame';
+                frame.appendChild(copy);
+                track.appendChild(frame);
+            }
+            overlay.appendChild(track);
+            banner.appendChild(overlay);
+            await tvPreloadImages(next); // El destino está en caché antes del movimiento.
+            if (typeof track.animate === 'function' &&
+                !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+                const animation = track.animate([
+                    { transform: 'translateX(0)' },
+                    { transform: 'translateX(-50%)' }
+                ], {duration: 950, easing: 'cubic-bezier(.35,.65,.23,1)', fill: 'forwards'});
+                await animation.finished.catch(() => {});
+            }
+            await new Promise(resolve => requestAnimationFrame(resolve));
+        } catch (error) {
+            console.error('Error al cambiar la imagen del banner TV:', error);
+        } finally {
+            if (overlay) overlay.remove();
+            tvBannerLastAdvanceAt = Date.now();
+            tvBannerTransitionInProgress = false;
+        }
+    }
+
+    function tvEscape(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+    }
+
+    function tvPrice(value) {
+        const amount = Number(value);
+        return `$${(Number.isFinite(amount) ? amount : 0).toFixed(2)}`;
+    }
+
+    function tvImage(p, className) {
+        return `<img class="${className}" src="${tvEscape(p.image || '')}" alt="${tvEscape(p.name)}" loading="eager" decoding="async">`;
+    }
+
+    // Se reparten los productos en páginas; después de la última se regresa a la primera.
+    function tvPage(items, size, index) {
+        if (!items.length) return [];
+        if (items.length <= size) return items;
+        const totalPages = Math.ceil(items.length / size);
+        const start = (index % totalPages) * size;
+        // Rellenar la página siguiente desde el inicio sin dejar espacios vacíos.
+        return Array.from({ length: size }, (_, i) => items[(start + i) % items.length]);
+    }
+
+    function tvPageLabel(items, size) {
+        const total = Math.ceil(items.length / size);
+        return total > 1 ? `${(tvSlideIndex % total) + 1} / ${total}` : '';
+    }
+
+    function tvProductCard(p) {
+        return `<article class="tv-menu-item">
+            <div class="tv-item-image">
+                ${tvImage(p, 'tv-item-photo')}
+                ${p.promo ? '<span class="tv-promo-label">Promo</span>' : ''}
+            </div>
+            <div class="tv-item-info">
+                <div class="tv-item-name">${tvEscape(p.name)}</div>
+                <div class="tv-item-prices">
+                    ${p.promo && p.oldPrice != null ? `<span class="tv-item-old">${tvPrice(p.oldPrice)}</span>` : ''}
+                    <span class="tv-item-price">${tvPrice(p.price)}</span>
+                </div>
+            </div>
+        </article>`;
+    }
+
+    // Motor nativo de animación (Web Animations API): evita depender de un CDN en una TV.
+    // Se precargan las imágenes antes del deslizamiento y se mantienen las dos páginas completas.
+    async function tvPreloadImages(root) {
+        const urls = [...new Set(Array.from(root.querySelectorAll('img[src]'), img => img.getAttribute('src')).filter(Boolean))];
+        if (!urls.length) return;
+        const jobs = urls.map(src => {
+            const img = new Image();
+            img.decoding = 'async';
+            img.src = src;
+            return typeof img.decode === 'function' ? img.decode().catch(() => {}) :
+                new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+        });
+        // Si un servidor de imágenes falla, el menú no debe quedarse detenido.
+        let timeoutId;
+        try {
+            await Promise.race([
+                Promise.allSettled(jobs),
+                new Promise(resolve => { timeoutId = setTimeout(resolve, 3000); })
+            ]);
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    // Transición sin deformaciones: la grilla nueva se monta con TARJETAS DIRECTAS.
+    // Una copia superpuesta de la página anterior se descubre progresivamente.
+    // No se inserta ningún wrapper en la grilla definitiva (antes eso rompía
+    // las 3 columnas y dejaba la pantalla como una sola columna sin fotos).
+    async function tvSwapGridPage(grid, markup) {
+        if (!grid || grid.dataset.tvSwapping === '1') return;
+        const previousMarkup = grid.innerHTML;
+        if (previousMarkup === markup) return;
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const template = document.createElement('template');
+        template.innerHTML = markup;
+        await tvPreloadImages(template.content);
+        if (!grid.isConnected || grid.innerHTML !== previousMarkup) return;
+        if (reducedMotion || typeof grid.animate !== 'function') {
+            grid.replaceChildren(template.content);
             return;
         }
 
-        track.innerHTML = carouselItems.map(p => `
-            <div class="banner" style="background-image: url('${p.image}'); background-size: cover; background-position: center;">
-                <div class="banner-content">
-                    <span class="banner-subtitle">¡Menú Digital!</span>
-                    <h3>${p.name}</h3>
-                    <span class="banner-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
-                </div>
-            </div>
-        `).join('');
+        const oldPage = document.createElement('div');
+        oldPage.className = `${grid.className} tv-grid-swap-page`;
+        oldPage.innerHTML = previousMarkup;
+        grid.dataset.tvSwapping = '1';
+        try {
+            // Mostrar la página antigua por encima y construir la nueva detrás.
+            // Los elementos reales siguen siendo hijos directos de la cuadrícula.
+            grid.replaceChildren(template.content, oldPage);
+            const motion = oldPage.animate([
+                { clipPath: 'inset(0 0 0 0)' },
+                { clipPath: 'inset(0 0 0 100%)' }
+            ], {
+                duration: 750,
+                easing: 'cubic-bezier(.4,0,.2,1)',
+                fill: 'forwards'
+            });
+            await motion.finished.catch(() => {});
+        } finally {
+            oldPage.remove();
+            delete grid.dataset.tvSwapping;
+        }
     }
 
-    function toggleFullScreen(elementId) {
-        const elem = document.getElementById(elementId);
-        if (!document.fullscreenElement) {
-            if (elem.requestFullscreen) elem.requestFullscreen();
-            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-            else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-            showToast("Modo TV activado");
-        } else {
-            if (document.exitFullscreen) document.exitFullscreen();
+    // La rotación de listas es totalmente independiente del banner destacado.
+    async function advanceTvMenuPages() {
+        if (tvTransitionInProgress || tvMenuTransitionInProgress) return;
+        tvMenuLastAdvanceAt = Date.now();
+        const activeMenu = products.filter(p => p.active === true).map(getEffectiveProductData);
+        const mode = tvEnabledModels[tvLayoutSlideIndex % tvEnabledModels.length];
+        if (mode === 'mosaic') {
+            if (activeMenu.filter(p => p.promo).length <= 4 && activeMenu.length <= 6) return;
+        } else if (mode === 'poster') {
+            if (activeMenu.length <= 8) return;
+        } else return;
+
+        tvMenuTransitionInProgress = true;
+        try {
+            tvSlideIndex += 1;
+            if (mode === 'mosaic') await renderTvMosaicPanels(activeMenu, true);
+            else await renderTvPosterCatalog(activeMenu, true);
+        } catch (error) {
+            console.error('Error en rotación suave de menú TV:', error);
+        } finally {
+            tvMenuTransitionInProgress = false;
+            tvMenuLastAdvanceAt = Date.now();
         }
+    }
+
+    function renderTvMosaicPanels(activeMenu, animated = false) {
+        const promos = activeMenu.filter(p => p.promo);
+        const menu = [...activeMenu].sort((a, b) => (Number(b.orders) || 0) - (Number(a.orders) || 0));
+        const promoGrid = document.getElementById('tvPromoGrid');
+        const menuGrid = document.getElementById('tvTopOrdersGrid');
+        const promoItems = tvPage(promos, 4, tvSlideIndex);
+        const promoMarkup = promoItems.length ? promoItems.map(tvProductCard).join('') :
+            '<div class="tv-empty-state"><i class="ph ph-tag"></i><strong>Próximamente nuevas promociones</strong></div>';
+        const menuItems = tvPage(menu, 6, tvSlideIndex);
+        const menuMarkup = menuItems.length ? menuItems.map(tvProductCard).join('') :
+            '<div class="tv-empty-state"><i class="ph ph-fork-knife"></i><strong>No hay productos disponibles</strong></div>';
+        const updateLabels = () => {
+            document.getElementById('tvPromoPageCount').textContent = tvPageLabel(promos, 4);
+            document.getElementById('tvMenuPageCount').textContent = tvPageLabel(menu, 6);
+        };
+        if (animated) {
+            const changes = [
+                promos.length > 4 ? tvSwapGridPage(promoGrid, promoMarkup) : Promise.resolve(),
+                menu.length > 6 ? tvSwapGridPage(menuGrid, menuMarkup) : Promise.resolve()
+            ];
+            return Promise.all(changes).then(updateLabels);
+        }
+        if (promoGrid.innerHTML !== promoMarkup) promoGrid.innerHTML = promoMarkup;
+        if (menuGrid.innerHTML !== menuMarkup) menuGrid.innerHTML = menuMarkup;
+        updateLabels();
+    }
+
+    function renderTvPosterCatalog(activeMenu, animated = false) {
+        const posterGrid = document.getElementById('tvPosterItems');
+        const ordered = [...activeMenu].sort((a,b) => Number(b.promo) - Number(a.promo) || (Number(b.orders) || 0) - (Number(a.orders) || 0));
+        const pageProducts = tvPage(ordered, 8, tvSlideIndex);
+        const markup = pageProducts.length ? pageProducts.map(p => `
+            <article class="tv-poster-product">
+                <div class="tv-poster-product-photo">
+                    ${tvImage(p, '')}
+                    ${p.promo ? '<span class="tv-poster-promo-flag">OFERTA</span>' : ''}
+                </div>
+                <div class="tv-poster-product-name">${tvEscape(p.name)}</div>
+                <div class="tv-poster-product-prices">
+                    ${p.promo && p.oldPrice != null ? `<s>${tvPrice(p.oldPrice)}</s>` : '<span></span>'}
+                    <strong>${tvPrice(p.price)}</strong>
+                </div>
+            </article>`).join('') : '<div class="tv-poster-empty">Próximamente tendremos nuevos productos</div>';
+        const updateLabels = () => {
+            document.getElementById('tvPosterPageCount').textContent = tvPageLabel(ordered, 8);
+            document.getElementById('tvPosterActiveCount').textContent = `${activeMenu.length} producto${activeMenu.length === 1 ? '' : 's'} activo${activeMenu.length === 1 ? '' : 's'}`;
+        };
+        if (animated && ordered.length > 8) return tvSwapGridPage(posterGrid, markup).then(updateLabels);
+        if (posterGrid.innerHTML !== markup) posterGrid.innerHTML = markup;
+        updateLabels();
+    }
+
+    function renderTvPoster(activeMenu, updateCatalog = true) {
+        const posterPhoto = document.getElementById('tvPosterFeaturedPhoto');
+        const posterHighlight = document.getElementById('tvPosterHighlight');
+        const ordered = [...activeMenu].sort((a,b) => Number(b.promo) - Number(a.promo) || (Number(b.orders) || 0) - (Number(a.orders) || 0));
+        if (updateCatalog) renderTvPosterCatalog(activeMenu);
+
+        // Selección de destacado, rotando también cuando hay pocos productos.
+        if (activeMenu.length) {
+            const featured = ordered[tvBannerIndex % ordered.length];
+            posterPhoto.innerHTML = `${tvImage(featured, '')}<span class="tv-poster-feature-tag">${featured.promo ? 'OFERTA ESPECIAL' : 'RECOMENDADO'}</span>`;
+            posterHighlight.innerHTML = `<h2>${tvEscape(featured.name)}</h2>${featured.promo && featured.oldPrice != null ? `<s class="tv-poster-highlight-old">Antes ${tvPrice(featured.oldPrice)}</s>` : ''}<strong class="tv-poster-highlight-price">${tvPrice(featured.price)}</strong>`;
+        } else {
+            posterPhoto.innerHTML = '';
+            posterHighlight.innerHTML = '<h2>Bienvenidos a FoodApp</h2>';
+        }
+    }
+
+    function renderTvSpotlight(activeMenu) {
+        const side = document.getElementById('tvSpotlightSideItems');
+        const main = document.getElementById('tvSpotlightMain');
+        const ordered = [...activeMenu].sort((a, b) => Number(b.promo) - Number(a.promo) || (Number(b.orders) || 0) - (Number(a.orders) || 0));
+        if (!ordered.length) {
+            side.innerHTML = '<div class="tv-spotlight-side-empty">Próximamente nuevos sabores</div>';
+            main.innerHTML = '<div class="tv-spotlight-no-products">¡Bienvenidos a FoodApp!</div>';
+            return;
+        }
+        const featuredIndex = tvBannerIndex % ordered.length;
+        const featured = ordered[featuredIndex];
+        const others = Array.from({ length: Math.min(3, ordered.length - 1) }, (_, i) =>
+            ordered[(featuredIndex + i + 1) % ordered.length]);
+        side.innerHTML = others.length ? others.map(p => `
+            <article class="tv-spotlight-small">
+                ${tvImage(p, 'tv-spotlight-small-image')}
+                <div class="tv-spotlight-small-info">
+                    <div class="tv-spotlight-small-name">${tvEscape(p.name)}</div>
+                    ${p.promo ? '<span class="tv-spotlight-promo-tag">PROMO</span>' : ''}
+                    ${p.promo && p.oldPrice != null ? `<div class="tv-spotlight-small-old">${tvPrice(p.oldPrice)}</div>` : ''}
+                    <div class="tv-spotlight-small-price">${tvPrice(p.price)}</div>
+                </div>
+            </article>`).join('') : '<div class="tv-spotlight-side-empty">¡Disfruta nuestro menú!</div>';
+        main.innerHTML = `${tvImage(featured, 'tv-spotlight-photo')}
+            <div class="tv-spotlight-text">
+                <span class="tv-spotlight-kicker"><i class="ph-fill ph-fire"></i> ${featured.promo ? 'OFERTA ESPECIAL' : 'EL SABOR DESTACADO'}</span>
+                <h2 class="tv-spotlight-headline">${tvEscape(featured.name)}</h2>
+                <span class="tv-spotlight-price">${tvPrice(featured.price)}</span>
+                ${featured.promo && featured.oldPrice != null ? `<div class="tv-spotlight-old-price">Antes: <s>${tvPrice(featured.oldPrice)}</s></div>` : ''}
+            </div>
+            <div class="tv-spotlight-bottom"><i class="ph-fill ph-hamburger"></i><span>FoodApp · ¡Pide tu favorito!</span></div>`;
+    }
+
+    function renderTvView() {
+        updateTvDesignControls();
+        const selectedMode = tvEnabledModels[tvLayoutSlideIndex % tvEnabledModels.length];
+        document.getElementById('tvModernBoard').hidden = selectedMode !== 'mosaic';
+        document.getElementById('tvPosterBoard').hidden = selectedMode !== 'poster';
+        document.getElementById('tvSpotlightBoard').hidden = selectedMode !== 'spotlight';
+        // Solo productos activos, con sus precios y promociones vigentes desde Supabase.
+        const activeMenu = products.filter(p => p.active === true).map(getEffectiveProductData);
+        if (selectedMode === 'poster') {
+            renderTvPoster(activeMenu);
+            return;
+        }
+        if (selectedMode === 'spotlight') {
+            renderTvSpotlight(activeMenu);
+            return;
+        }
+        // Las listas inferiores no se reescriben durante la rotación del banner.
+        renderTvMosaicPanels(activeMenu);
+        renderTvMosaicHero(activeMenu);
+    }
+
+    function renderTvBannerOnly() {
+        const selectedMode = tvEnabledModels[tvLayoutSlideIndex % tvEnabledModels.length];
+        const activeMenu = products.filter(p => p.active === true).map(getEffectiveProductData);
+        if (selectedMode === 'poster') renderTvPoster(activeMenu, false);
+        else if (selectedMode === 'spotlight') renderTvSpotlight(activeMenu);
+        else renderTvMosaicHero(activeMenu);
+    }
+
+    function renderTvMosaicHero(activeMenu) {
+        const hero = document.getElementById('tvHeroBanner');
+        const featured = document.getElementById('tvHeroMain');
+        const tiles = document.getElementById('tvHeroTiles');
+
+        if (!activeMenu.length) {
+            hero.classList.add('tv-hero-only');
+            featured.innerHTML = '<div class="tv-featured-heading"><span class="tv-eyebrow">MENÚ DIGITAL</span><h2>Bienvenidos a <span>FoodApp</span></h2></div>';
+            tiles.innerHTML = '';
+            return;
+        }
+
+        // Barrido cíclico del banner: todos los productos activos entran en la rotación,
+        // priorizando ofertas vigentes (sin ocultar el resto del menú).
+        const bannerMenu = [...activeMenu].sort((a,b) => Number(b.promo) - Number(a.promo) || (Number(b.orders) || 0) - (Number(a.orders) || 0));
+        const bannerItems = Array.from({length: Math.min(7, bannerMenu.length)}, (_, i) =>
+            bannerMenu[(tvBannerIndex + i) % bannerMenu.length]);
+        const main = bannerItems[0];
+        hero.classList.toggle('tv-hero-only', bannerItems.length === 1);
+        featured.innerHTML = `${tvImage(main, 'tv-hero-photo')}
+            ${main.promo ? '<span class="tv-hero-promo-flag">🔥 PROMOCIÓN</span>' : ''}
+            <div class="tv-featured-heading">
+                <span class="tv-eyebrow">${main.promo ? 'OFERTA ESPECIAL' : 'MENÚ DIGITAL'}</span>
+                <h2>Productos <span>Activos</span></h2>
+            </div>
+            <div class="tv-featured-bottom">
+                <div class="tv-featured-name">${tvEscape(main.name)}</div>
+                <div class="tv-featured-price-wrap">
+                    ${main.promo && main.oldPrice != null ? `<s class="tv-featured-old-price">${tvPrice(main.oldPrice)}</s>` : ''}
+                    <span class="tv-featured-price">${tvPrice(main.price)}</span>
+                </div>
+            </div>`;
+        tiles.innerHTML = bannerItems.slice(1).map(p => `
+            <div class="tv-hero-tile">
+                ${tvImage(p, 'tv-tile-photo')}
+                ${p.promo ? '<span class="tv-hero-promo-flag">OFERTA</span>' : ''}
+                <div class="tv-tile-info">
+                    <span class="tv-tile-name">${tvEscape(p.name)}</span>
+                    <div class="tv-tile-price-wrap">
+                        ${p.promo && p.oldPrice != null ? `<s class="tv-tile-old-price">${tvPrice(p.oldPrice)}</s>` : ''}
+                        <span class="tv-tile-price">${tvPrice(p.price)}</span>
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    // Si se sale mediante Esc, el menú deja de rotar y queda en modo configuración.
+    function handleTvFullscreenChange() {
+        const wrapper = document.getElementById('tv-content-wrapper');
+        tvPresentationRunning = document.fullscreenElement === wrapper;
+        tvLastAdvanceAt = Date.now();
+        tvBannerLastAdvanceAt = Date.now();
+        tvMenuLastAdvanceAt = Date.now();
+        updateTvCountdown();
     }
 
     function renderCategories() {
@@ -2066,11 +3477,12 @@
 
         list.innerHTML = filtered.map(rawP => {
             const p = getEffectiveProductData(rawP);
-            let promoStatusStr = '';
+            let promoStatusStr = '<span style="color:var(--text-muted); font-size:0.75rem; font-weight:600;">Sin promoción</span>';
             if (rawP.promo) {
-                if (p.promo) promoStatusStr = '<span style="color:#10b981; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(PROMO ACTIVA)</span>';
-                else if (rawP.promoEnd && today > rawP.promoEnd) promoStatusStr = '<span style="color:#ef4444; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(EXPIRADA)</span>';
-                else promoStatusStr = '<span style="color:#f59e0b; font-size:0.7rem; font-weight:bold; margin-left:0.5rem;">(PROGRAMADA)</span>';
+                if (p.promo && rawP.active) promoStatusStr = '<span style="color:#16a34a; font-size:0.78rem; font-weight:800;">● PROMO ACTIVA</span>';
+                else if (rawP.promoEnd && today > rawP.promoEnd) promoStatusStr = '<span style="color:#dc2626; font-size:0.78rem; font-weight:800;">● PROMO VENCIDA</span>';
+                else if (rawP.promoStart && today < rawP.promoStart) promoStatusStr = '<span style="color:#d97706; font-size:0.78rem; font-weight:800;">● PROMO PROGRAMADA</span>';
+                else promoStatusStr = '<span style="color:#d97706; font-size:0.78rem; font-weight:800;">● PROMO CONFIGURADA (PRODUCTO OCULTO)</span>';
             }
 
             return `
@@ -2079,53 +3491,71 @@
                     <img src="${rawP.image}" style="width:60px; height:60px; object-fit:cover; border-radius:8px;">
                     <div style="flex:1;">
                         <strong style="color:var(--text-main); font-size:0.95rem;">${rawP.name} ${!rawP.active ? '<span style="color:#ef4444;">(Oculto)</span>' : ''}</strong>
-                        <div style="font-size:0.75rem; color:var(--text-muted);">${rawP.category} | $${p.price.toFixed(2)} ${promoStatusStr}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0;">${rawP.category} | $${p.price.toFixed(2)}</div>
+                        <div aria-live="polite">${promoStatusStr}</div>
                     </div>
                 </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.65rem 0.75rem; background:var(--bg-color); border:1px solid var(--border); border-radius:10px;">
+                    <div>
+                        <div style="font-size:0.72rem; color:var(--text-muted);">Visibilidad del producto</div>
+                        <strong style="font-size:0.82rem; color:${rawP.active ? '#16a34a' : '#ef4444'};">${rawP.active ? '● Visible en el menú' : '● Oculto del menú'}</strong>
+                    </div>
+                    <button class="btn-status" style="flex:0 0 auto; background-color:${rawP.active ? '#6b7280' : '#22c55e'}; padding:0.45rem 0.65rem;" onclick="toggleProductVisibility(${rawP.id}, ${rawP.active})">
+                        ${rawP.active ? 'Ocultar' : 'Mostrar'}
+                    </button>
+                </div>
+
                 <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
                     <button class="btn-status process" onclick="openEditProductForm(${rawP.id})">Editar</button>
-                    <button class="btn-status" style="background-color: #f59e0b;" onclick="togglePromoCard(${rawP.id})">Promo</button>
-                    <button class="btn-status" style="background-color: #ef4444;" onclick="deleteAdminProduct(${rawP.id})">Eliminar</button>
+                    ${rawP.promo
+                        ? `<button class="btn-status" style="background-color:#ef4444;" onclick="deactivatePromotion(${rawP.id})"><i class="ph-fill ph-tag"></i> Desactivar Promo</button>`
+                        : `<button class="btn-status" style="background-color:#22c55e;" onclick="openPromoSetup(${rawP.id})"><i class="ph-fill ph-tag"></i> Activar Promo</button>`
+                    }
+                    <button class="btn-status" style="background-color:#6b7280;" onclick="deleteAdminProduct(${rawP.id})">Eliminar</button>
                 </div>
-                
-                <div id="promo-settings-card-${rawP.id}" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border);">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong style="color:var(--text-main); font-size: 0.9rem;">Configurar Promoción</strong>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="manage-active-${rawP.id}" ${rawP.active ? 'checked' : ''}>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom: 0.5rem;">
-                        <div style="flex:1; min-width:80px;">
-                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio Promo ($)</label>
-                            <input type="number" id="manage-price-${rawP.id}" class="admin-input" value="${rawP.price}" step="0.01">
-                        </div>
-                        <div style="flex:1; min-width:80px;">
-                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio Normal ($)</label>
-                            <input type="number" id="manage-oldprice-${rawP.id}" class="admin-input" value="${rawP.oldPrice !== null ? rawP.oldPrice : ''}" step="0.01">
-                        </div>
-                        <div style="flex:1; min-width:100px; display:flex; align-items:flex-end;">
-                            <label style="display:flex; align-items:center; gap:0.5rem; color:var(--text-main); font-size:0.9rem; margin-bottom: 0.5rem;">
-                                <input type="checkbox" id="manage-promo-${rawP.id}" ${rawP.promo ? 'checked' : ''} onchange="togglePromoUI(${rawP.id}, this.checked)">
-                                Activar Promo
-                            </label>
+
+                ${rawP.promo ? `
+                    <button class="btn-status" style="background:transparent; color:var(--primary); border:1px solid var(--primary); margin-top:0.15rem;" onclick="openPromoSetup(${rawP.id})">
+                        <i class="ph ph-pencil-simple"></i> Ajustar promoción
+                    </button>
+                ` : ''}
+
+                <div id="promo-settings-card-${rawP.id}" style="display:none; flex-direction:column; gap:0.75rem; margin-top:0.75rem; padding:1rem; background:var(--bg-color); border:1px solid var(--border); border-radius:12px;">
+                    <div>
+                        <strong style="color:var(--text-main); font-size:1rem;">${rawP.promo ? 'Ajustar promoción' : 'Activar promoción'}</strong>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
+                            ${rawP.promo ? 'Modifica los precios o las fechas y guarda los cambios.' : 'Solo coloca el precio promocional. Las fechas son opcionales.'}
                         </div>
                     </div>
-                    
-                    <div id="manage-promo-dates-${rawP.id}" style="display: ${rawP.promo ? 'flex' : 'none'}; gap:0.5rem; flex-wrap:wrap;">
+
+                    ${!rawP.active ? '<div style="color:#d97706; font-size:0.8rem;">Al activar la promoción, también se mostrará el producto en el menú.</div>' : ''}
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:110px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio normal ($)</label>
+                            <input type="number" id="manage-oldprice-${rawP.id}" class="admin-input" value="${rawP.promo && rawP.oldPrice !== null ? rawP.oldPrice : rawP.price}" step="0.01" min="0">
+                        </div>
+                        <div style="flex:1; min-width:110px;">
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Precio promo ($)</label>
+                            <input type="number" id="manage-price-${rawP.id}" class="admin-input" value="${rawP.promo ? rawP.price : ''}" step="0.01" min="0" placeholder="Ej. 4.99">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                         <div style="flex:1; min-width:130px;">
-                            <label style="font-size:0.75rem; color:var(--text-muted)">Inicio (Opcional)</label>
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Inicio (opcional)</label>
                             <input type="date" id="manage-start-${rawP.id}" class="admin-input" value="${rawP.promoStart || ''}">
                         </div>
                         <div style="flex:1; min-width:130px;">
-                            <label style="font-size:0.75rem; color:var(--text-muted)">Fin (Opcional)</label>
+                            <label style="font-size:0.75rem; color:var(--text-muted)">Fin (opcional)</label>
                             <input type="date" id="manage-end-${rawP.id}" class="admin-input" value="${rawP.promoEnd || ''}">
                         </div>
                     </div>
 
-                    <button class="checkout-btn" id="btn-save-manage-${rawP.id}" style="padding: 0.6rem; margin-top: 0.5rem; font-size: 0.95rem; width: 100%;" onclick="savePromoSettings(${rawP.id})">Guardar Ajustes</button>
+                    <div id="promo-feedback-${rawP.id}" role="alert" style="display:none; font-size:0.82rem; color:#dc2626;"></div>
+                    <button class="checkout-btn" id="btn-save-manage-${rawP.id}" style="padding:0.75rem; margin-top:0; font-size:0.95rem; width:100%; background-color:#22c55e;" onclick="savePromoSettings(${rawP.id})">
+                        <i class="ph-fill ph-check-circle"></i> ${rawP.promo ? 'Guardar cambios' : 'Activar promoción'}
+                    </button>
+                    <button class="btn-status" style="background:transparent; color:var(--text-muted); border:1px solid var(--border);" onclick="togglePromoCard(${rawP.id})">Cancelar</button>
                 </div>
             </div>
             `;
@@ -2134,65 +3564,155 @@
 
     function togglePromoCard(id) {
         const card = document.getElementById(`promo-settings-card-${id}`);
+        if (!card) return;
         card.style.display = (card.style.display === 'none' || card.style.display === '') ? 'flex' : 'none';
     }
 
-    function togglePromoUI(id, isChecked) {
-        const datesDiv = document.getElementById(`manage-promo-dates-${id}`);
-        datesDiv.style.display = isChecked ? 'flex' : 'none';
-        
-        const priceInput = document.getElementById(`manage-price-${id}`);
-        const oldPriceInput = document.getElementById(`manage-oldprice-${id}`);
-        
-        if (isChecked) {
-            if (priceInput.value !== '' && oldPriceInput.value === '') {
-                oldPriceInput.value = priceInput.value;
-                priceInput.value = ''; 
-            }
-        } else {
-            if (oldPriceInput.value !== '') {
-                priceInput.value = oldPriceInput.value;
-                oldPriceInput.value = '';
-            }
-            document.getElementById(`manage-start-${id}`).value = '';
-            document.getElementById(`manage-end-${id}`).value = '';
+    function openPromoSetup(id) {
+        const card = document.getElementById(`promo-settings-card-${id}`);
+        if (!card) return;
+
+        card.style.display = 'flex';
+        const promoInput = document.getElementById(`manage-price-${id}`);
+        if (promoInput) {
+            setTimeout(() => {
+                promoInput.focus();
+                promoInput.select();
+            }, 50);
         }
     }
 
-    // Botón oficial de Guardado (Sube a Supabase y verifica)
-    async function savePromoSettings(id) {
-        const btn = document.getElementById(`btn-save-manage-${id}`);
-        
-        const active = document.getElementById(`manage-active-${id}`).checked;
-        const priceVal = document.getElementById(`manage-price-${id}`).value;
-        const price = priceVal === '' ? 0 : parseFloat(priceVal);
-        const oldPriceVal = document.getElementById(`manage-oldprice-${id}`).value;
-        const oldPrice = oldPriceVal === '' ? null : parseFloat(oldPriceVal);
-        const promo = document.getElementById(`manage-promo-${id}`).checked;
-        const promoStart = document.getElementById(`manage-start-${id}`).value || null;
-        const promoEnd = document.getElementById(`manage-end-${id}`).value || null;
+    function showPromoError(id, message) {
+        const feedback = document.getElementById(`promo-feedback-${id}`);
+        if (feedback) {
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        }
+        showToast(message);
+    }
 
-        if (promo && (priceVal === '' || oldPriceVal === '')) return showToast("⚠️ Debes ingresar ambos precios (Normal y Promo).");
-        if (promo && price >= oldPrice) return showToast("⚠️ El precio promo debe ser menor al normal.");
+    // Se aplica la fila devuelta por Supabase, no un estado local supuesto.
+    function applySavedProductRow(row) {
+        const index = products.findIndex(p => String(p.id) === String(row.id));
+        if (index < 0) return;
+        products[index] = {
+            ...products[index],
+            price: Number(row.price),
+            oldPrice: row.old_price == null ? null : Number(row.old_price),
+            promo: row.promo === true,
+            promoStart: row.promo_start || null,
+            promoEnd: row.promo_end || null,
+            active: row.active === true
+        };
+        // Redibuja el panel: el formulario se cierra y aparece el estado real.
+        renderHomeViews();
+        renderCarousel();
+        if (document.getElementById('view-menu').classList.contains('active')) renderFullMenu();
+        if (document.getElementById('view-admin-tv').classList.contains('active')) renderTvView();
+        if (document.getElementById('view-admin-products').classList.contains('active')) renderAdminProducts();
+        localStorage.setItem('foodapp_trigger_sync', Date.now().toString());
+    }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Guardando...';
-
+    async function toggleProductVisibility(id, currentActive) {
         try {
-            const { data, error } = await supabaseClient.from('products').update({
-                active: active, price: price, old_price: oldPrice, promo: promo, promo_start: promoStart, promo_end: promoEnd
-            }).eq('id', id).select();
-
+            const { data, error } = await supabaseClient.from('products')
+                .update({ active: !currentActive }).eq('id', id).select();
             if (error) throw error;
-            if (data && data.length === 0) throw new Error("Permiso denegado por Supabase (Faltan políticas RLS).");
-            
-            await syncConSupabase(); // Sincronizamos para que todo refleje los cambios correctos
-            showToast("Ajustes guardados");
+            if (!data || data.length !== 1) throw new Error('Supabase no confirmó el cambio. Revisa los permisos de la tabla products.');
+            applySavedProductRow(data[0]);
+            showToast(data[0].active ? 'Producto visible en el menú' : 'Producto ocultado del menú');
         } catch (error) {
             console.error(error);
-            showToast(error.message || "Error al guardar ajustes");
+            showToast(error.message || 'No se pudo cambiar la visibilidad');
+        }
+    }
+
+    async function deactivatePromotion(id) {
+        const p = products.find(prod => String(prod.id) === String(id));
+        if (!p) return;
+        if (!confirm(`¿Desactivar la promoción de "${p.name}"?`)) return;
+
+        const normalPrice = p.oldPrice !== null ? Number(p.oldPrice) : Number(p.price);
+        try {
+            const { data, error } = await supabaseClient.from('products')
+                .update({
+                    price: normalPrice, old_price: null, promo: false,
+                    promo_start: null, promo_end: null
+                }).eq('id', id).select();
+            if (error) throw error;
+            if (!data || data.length !== 1 || data[0].promo !== false) {
+                throw new Error('Supabase no confirmó que se haya desactivado la promoción.');
+            }
+            applySavedProductRow(data[0]);
+            showToast('✅ Promoción desactivada; precio normal restaurado');
+        } catch (error) {
+            console.error(error);
+            showToast(error.message || 'No se pudo desactivar la promoción');
+        }
+    }
+
+    // Activa inmediatamente si no se indicaron fechas. Si se indica inicio futuro,
+    // la promoción queda programada y se señala como tal.
+    async function savePromoSettings(id) {
+        const btn = document.getElementById(`btn-save-manage-${id}`);
+        if (!btn || btn.disabled) return;
+
+        const promoPriceVal = document.getElementById(`manage-price-${id}`).value.trim();
+        const normalPriceVal = document.getElementById(`manage-oldprice-${id}`).value.trim();
+        const promoPrice = promoPriceVal === '' ? NaN : Number(promoPriceVal);
+        const normalPrice = normalPriceVal === '' ? NaN : Number(normalPriceVal);
+        const promoStart = document.getElementById(`manage-start-${id}`).value || null;
+        const promoEnd = document.getElementById(`manage-end-${id}`).value || null;
+        const today = getLocalYYYYMMDD();
+
+        if (!Number.isFinite(normalPrice) || !Number.isFinite(promoPrice)) {
+            return showPromoError(id, 'Ingresa el precio normal y el promocional.');
+        }
+        if (promoPrice < 0 || normalPrice <= 0) {
+            return showPromoError(id, 'El precio normal debe ser mayor que cero y el promocional no puede ser negativo.');
+        }
+        if (promoPrice >= normalPrice) {
+            return showPromoError(id, 'El precio promocional debe ser menor que el normal.');
+        }
+        if (promoStart && promoEnd && promoStart > promoEnd) {
+            return showPromoError(id, 'La fecha de inicio no puede ser posterior a la fecha final.');
+        }
+        if (promoEnd && promoEnd < today) {
+            return showPromoError(id, 'La fecha final ya venció. Actualízala o déjala vacía para activar ahora.');
+        }
+
+        const feedback = document.getElementById(`promo-feedback-${id}`);
+        if (feedback) feedback.style.display = 'none';
+        btn.disabled = true;
+        const originalButtonHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Activando...';
+
+        try {
+            // La promoción de un producto oculto también lo hace visible.
+            const { data, error } = await supabaseClient.from('products')
+                .update({
+                    price: promoPrice,
+                    old_price: normalPrice,
+                    promo: true,
+                    promo_start: promoStart,
+                    promo_end: promoEnd,
+                    active: true
+                }).eq('id', id).select();
+            if (error) throw error;
+            if (!data || data.length !== 1 || data[0].promo !== true) {
+                throw new Error('Supabase no confirmó la activación. Comprueba los permisos de products y vuelve a intentar.');
+            }
+            // No declaramos éxito ni cerramos el formulario hasta confirmar el guardado.
+            applySavedProductRow(data[0]);
+            const effective = getEffectiveProductData(products.find(p => String(p.id) === String(id)));
+            showToast(effective.promo ? '✅ Promoción activa y guardada' : '📅 Promoción guardada y programada');
+        } catch (error) {
+            console.error('No se pudo activar la promoción:', error);
+            showPromoError(id, error.message || 'No se pudo guardar la promoción.');
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = 'Guardar Ajustes'; }
+            // Si se redibujó la tarjeta, el botón anterior ya no existe.
+            btn.disabled = false;
+            btn.innerHTML = originalButtonHTML;
         }
     }
 
@@ -2520,15 +4040,9 @@
         document.getElementById('themeToggle').innerHTML = isDarkMode ? '<i class="ph ph-sun"></i>' : '<i class="ph ph-moon"></i>';
     }
 
-    // --- REGISTRO PWA ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('service-worker.js').catch(err => console.log('SW error', err));
-        });
-    }
-
     init();
 
 </script>
+<script src="./pwa.js" defer></script>
 </body>
 </html>

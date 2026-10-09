@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fb5454"/><stop offset=".62" stop-color="#ec353e"/><stop offset="1" stop-color="#c91d2b"/></linearGradient>
+ <radialGradient id="glow" cx="0.17" cy="0.10" r="0.95"><stop stop-color="#fff" stop-opacity=".19"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <filter id="shadow"><feDropShadow dx="0" dy="11" stdDeviation="9" flood-color="#6f101b" flood-opacity=".28"/></filter>
+</defs>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<rect width="512" height="512" rx="112" fill="url(#glow)"/>
+<g filter="url(#shadow)">
+<!-- Pan superior -->
+<path d="M112 249 C116 183 168 139 254 139 C341 139 393 183 400 249 Q400 258 387 258 H125 Q112 258 112 249Z" fill="#fffaf4"/>
+<!-- semillas -->
+<g fill="#f6b350"><ellipse cx="203" cy="185" rx="5" ry="11" transform="rotate(-27 203 185)"/><ellipse cx="260" cy="173" rx="5" ry="11" transform="rotate(5 260 173)"/><ellipse cx="319" cy="190" rx="5" ry="11" transform="rotate(27 319 190)"/><ellipse cx="166" cy="218" rx="5" ry="10" transform="rotate(-35 166 218)"/><ellipse cx="352" cy="219" rx="5" ry="10" transform="rotate(35 352 219)"/></g>
+<!-- lechuga -->
+<path d="M113 268 Q133 253 150 270 Q168 257 187 271 Q204 258 224 271 Q245 256 265 269 Q288 254 306 269 Q330 257 348 270 Q372 252 400 269 L390 294 H122 Z" fill="#98d94b"/>
+<!-- queso -->
+<path d="M128 288 H383 L364 316 L336 305 L304 333 L282 312 L252 333 L228 312 L195 324 L167 309 L146 319Z" fill="#ffd35b"/>
+<!-- carne -->
+<rect x="112" y="300" width="288" height="37" rx="18.5" fill="#713b33"/>
+<path d="M123 308 Q156 321 193 312 Q227 321 260 313 Q305 323 344 314 Q372 322 391 310" fill="none" stroke="#a26851" stroke-width="7" stroke-linecap="round" opacity=".85"/>
+<!-- pan inferior -->
+<path d="M119 346 Q117 336 131 336 H383 Q396 336 393 348 C386 383 356 394 257 394 C159 394 125 381 119 346Z" fill="#fffaf4"/>
+<path d="M145 363 Q253 389 371 362" fill="none" stroke="#f6cb9b" stroke-width="9" stroke-linecap="round" opacity=".85"/>
+</g>
+</svg>
