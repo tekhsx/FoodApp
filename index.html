@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.16">
+    <meta name="foodapp-version" content="2026.10.09.17">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -1961,13 +1961,42 @@
 .size-continue-btn{display:block;width:100%;border:0;background:transparent;color:var(--text-muted);padding:12px;margin-top:5px;font-size:.83rem;font-weight:750;cursor:pointer}
 @media(max-width:400px){.cart-page-header{gap:8px}.cart-page-header .section-title{font-size:1.1rem}.cart-product-photo{width:62px;height:62px}.cart-product-row{gap:9px}.cart-remove-btn{padding:7px 2px}}
 
+
+        .app-confirm-overlay[hidden]{display:none!important}
+        .app-confirm-overlay{position:fixed;inset:0;z-index:20000;display:flex;justify-content:center;align-items:center;
+            padding:18px;background:rgba(5,10,20,.68);backdrop-filter:blur(4px)}
+        .app-confirm-card{width:min(100%,420px);max-height:92dvh;overflow-y:auto;padding:22px 20px 20px;
+            border-radius:19px;background:var(--surface-color);color:var(--text-main);box-shadow:0 20px 55px #0005;text-align:center}
+        .app-confirm-icon{display:flex;align-items:center;justify-content:center;width:54px;height:54px;
+            border-radius:50%;margin:0 auto 12px;color:var(--primary);background:rgba(239,68,68,.1);font-size:1.6rem}
+        .app-confirm-card h3{font-size:1.2rem;font-weight:850;margin:0 0 10px}
+        .app-confirm-card p{margin:0 0 20px;font-size:.9rem;line-height:1.5;color:var(--text-muted);overflow-wrap:anywhere}
+        .app-confirm-actions{display:flex;gap:10px}
+        .app-confirm-actions button{flex:1;min-height:44px;padding:10px;border-radius:11px;font-weight:800;
+            font-size:.89rem;cursor:pointer}
+        .app-confirm-cancel{background:var(--bg-color);border:1px solid var(--border);color:var(--text-main)}
+        .app-confirm-ok{background:var(--primary);border:1px solid var(--primary);color:white}
+        .app-confirm-ok.is-danger{background:#dc2626;border-color:#dc2626}
+        .app-confirm-actions button:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
+        @media(max-width:380px){.app-confirm-actions{flex-direction:column-reverse}}
     </style>
 </head>
 <body>
 
 <div class="app-container">
     
-    <div id="toast">Notificación</div>
+    <div id="toast" role="status" aria-live="polite">Notificación</div>
+    <div id="appConfirmDialog" class="app-confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage" hidden onclick="if(event.target===this)resolveAppConfirm(false)">
+        <div class="app-confirm-card" role="document">
+            <div class="app-confirm-icon"><i class="ph ph-question"></i></div>
+            <h3 id="appConfirmTitle">Confirmar acción</h3>
+            <p id="appConfirmMessage"></p>
+            <div class="app-confirm-actions">
+                <button type="button" class="app-confirm-cancel" id="appConfirmCancel" onclick="resolveAppConfirm(false)">Cancelar</button>
+                <button type="button" class="app-confirm-ok" id="appConfirmAccept" onclick="resolveAppConfirm(true)">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
 
@@ -2398,7 +2427,7 @@
     <span><strong>Precios según el tamaño</strong><small>Activa los tamaños disponibles y escribe el precio de cada uno.</small></span>
   </label>
   <div id="productSizeFields" hidden>
-    <p>Selecciona las presentaciones que vendes.</p>
+    <p>Marca los tamaños que vendes y asigna un precio a cada uno.</p>
     <div id="productSizePriceRows"></div>
   </div>
 </div>
@@ -3037,6 +3066,39 @@
         localStorage.setItem('foodapp_cart', JSON.stringify(cart));
     }
 
+    let pendingAppConfirm=null;
+    let previousConfirmFocus=null;
+    function showAppConfirm(message,options={}){
+        if(pendingAppConfirm)return Promise.resolve(false);
+        const panel=document.getElementById('appConfirmDialog');
+        if(!panel)return Promise.resolve(false);
+        document.getElementById('appConfirmTitle').textContent=options.title||'Confirmar acción';
+        document.getElementById('appConfirmMessage').textContent=String(message);
+        const accept=document.getElementById('appConfirmAccept');
+        const cancel=document.getElementById('appConfirmCancel');
+        accept.textContent=options.confirmText||'Confirmar';
+        cancel.textContent=options.cancelText||'Cancelar';
+        accept.classList.toggle('is-danger',options.danger===true);
+        previousConfirmFocus=document.activeElement;
+        panel.hidden=false;
+        return new Promise(resolve=>{
+            pendingAppConfirm=resolve;
+            cancel.focus();
+        });
+    }
+    function resolveAppConfirm(ok){
+        if(!pendingAppConfirm)return;
+        const resolve=pendingAppConfirm;
+        pendingAppConfirm=null;
+        document.getElementById('appConfirmDialog').hidden=true;
+        if(previousConfirmFocus?.isConnected&&typeof previousConfirmFocus.focus==='function')previousConfirmFocus.focus();
+        previousConfirmFocus=null;
+        resolve(Boolean(ok));
+    }
+    document.addEventListener('keydown',e=>{
+        if(e.key==='Escape'&&pendingAppConfirm){e.preventDefault();resolveAppConfirm(false);}
+    });
+
     function showToast(msg) {
         const toast = document.getElementById('toast');
         toast.innerText = msg;
@@ -3286,7 +3348,7 @@
     }
 
 
-    const PRODUCT_SIZE_NAMES=['Pequeña','Clásico','Clásica','Mediano','Mediana','Grande','Extra grande'];
+    const PRODUCT_SIZE_NAMES=['Clásico','Mediano','Grande','Extra grande'];
     let choosingProductSizeId=null;
     function getProductSizeOptions(product){
         const sizes=Array.isArray(product?.sizeOptions)?product.sizeOptions:[];
@@ -3303,21 +3365,13 @@
     function populateProductSizeFields(product=null){
         const saved=getProductSizeOptions(product);
         document.getElementById('enableProductSizes').checked=saved.length>0;
-        const makeRow=(name,index)=>{
-            const row=saved.find(x=>x.name===name);
+        document.getElementById('productSizePriceRows').innerHTML=PRODUCT_SIZE_NAMES.map((name,index)=>{
+            const row=saved.find(v=>v.name===name);
             return '<div class="product-size-edit-row"><label><input type="checkbox" data-size-check="'+index+'" '+
                 (row?'checked':'')+' onchange="toggleSizePriceInput('+index+')">'+escapeCustomerHtml(name)+'</label>'+
                 '<input type="number" inputmode="decimal" min="0.01" step="0.01" data-size-price="'+index+
-                '" placeholder="$ Precio" '+(row?'value="'+row.price.toFixed(2)+'"':'disabled')+'></div>';
-        };
-        const main=['Clásico','Mediano','Extra grande'];
-        const others=PRODUCT_SIZE_NAMES.filter(name=>!main.includes(name));
-        const otherSelected=others.some(name=>saved.some(x=>x.name===name));
-        document.getElementById('productSizePriceRows').innerHTML=
-            '<div class="product-size-edit-groups"><div class="product-size-primary">'+
-            main.map(name=>makeRow(name,PRODUCT_SIZE_NAMES.indexOf(name))).join('')+'</div>'+
-            '<details class="product-size-more" '+(otherSelected?'open':'')+'><summary>Otros tamaños (Pequeña, Grande…)</summary>'+
-            others.map(name=>makeRow(name,PRODUCT_SIZE_NAMES.indexOf(name))).join('')+'</details></div>';
+                '" placeholder="Precio $" '+(row?'value="'+row.price.toFixed(2)+'"':'disabled')+' aria-label="Precio '+escapeCustomerHtml(name)+'"></div>';
+        }).join('');
         toggleProductSizeFields();
     }
     function toggleSizePriceInput(index){
@@ -4144,10 +4198,13 @@
         renderCart();
         showToast('Producto eliminado del carrito');
     }
-    function clearCart(){
+    async function clearCart(){
         if(cartCheckoutInProgress)return showToast('Espera mientras se envía el pedido.');
         if(!cart.length)return;
-        if(!confirm('¿Cancelar la selección y eliminar todos los productos del carrito?'))return;
+        if(!await showAppConfirm('¿Eliminar todos los productos seleccionados del carrito?',{
+            title:'Vaciar carrito',confirmText:'Sí, vaciar',danger:true
+        }))return;
+        if(cartCheckoutInProgress)return showToast('Espera mientras se envía el pedido.');
         cart=[];
         saveState();
         updateCartBadge();
@@ -4472,7 +4529,9 @@
     async function deactivatePromotion(id) {
         const p = products.find(prod => String(prod.id) === String(id));
         if (!p) return;
-        if (!confirm(`¿Desactivar la promoción de "${p.name}"?`)) return;
+        if (!await showAppConfirm(`¿Desactivar la promoción de "${p.name}"?`,{
+            title:'Desactivar promoción',confirmText:'Desactivar',danger:true
+        })) return;
 
         const normalPrice = p.oldPrice !== null ? Number(p.oldPrice) : Number(p.price);
         try {
@@ -4590,7 +4649,9 @@
     }
 
     async function deleteAdminProduct(id) {
-        if(!confirm("¿Estás seguro de eliminar este producto?")) return;
+        if(!await showAppConfirm('¿Eliminar este producto? Esta acción no se puede deshacer.',{
+            title:'Eliminar producto',confirmText:'Sí, eliminar',danger:true
+        })) return;
         try {
             const { data, error } = await supabaseClient.from('products').delete().eq('id', id).select();
             if(error) throw error;
@@ -4929,7 +4990,9 @@
     }
 
     async function deleteUser(userId) {
-        if(!confirm("¿Estás seguro de eliminar este usuario permanentemente?")) return;
+        if(!await showAppConfirm('¿Eliminar este usuario permanentemente?',{
+            title:'Eliminar usuario',confirmText:'Sí, eliminar',danger:true
+        })) return;
         try {
             const { error } = await supabaseClient.from('users').delete().eq('id', userId);
             if(error) throw error;
@@ -5073,7 +5136,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-11" defer></script>
-<script src="./push-notifications.js?v=20261009-11" defer></script>
+<script src="./pwa.js?v=20261009-17" defer></script>
+<script src="./push-notifications.js?v=20261009-17" defer></script>
 </body>
 </html>

@@ -46,7 +46,10 @@
     } else if (isIosSafari) {
       const message = 'Para instalar tu\'dale: toca Compartir y luego “Añadir a pantalla de inicio”.';
       if (typeof showToast === 'function') showToast(message);
-      else alert(message);
+      else {
+        const toast=document.getElementById('toast');
+        if(toast){toast.textContent=message;toast.style.display='block';setTimeout(()=>toast.style.display='none',3500);}
+      }
     }
   });
   refreshInstallButton();

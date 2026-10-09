@@ -15,7 +15,11 @@
   const sessionKey = 'foodapp_push_account_session';
   const declinedKey = identity => 'foodapp_push_declined_' + (identity?.id || 'guest');
   const accountLabel = identity => identity?.id ? 'user:' + identity.id : 'guest';
-  const safeToast = message => typeof showToast === 'function' ? showToast(message) : alert(message);
+  const safeToast = message => {
+    if(typeof showToast === 'function')return showToast(message);
+    const toast=document.getElementById('toast');
+    if(toast){toast.textContent=message;toast.style.display='block';setTimeout(()=>toast.style.display='none',3500);}
+  };
   let processing = false;
   let createdDeviceOnThisLoad = false;
 
