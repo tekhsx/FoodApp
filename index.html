@@ -4611,68 +4611,79 @@
         }
     }
 
-    // Activa inmediatamente si no se indicaron fechas. Si se indica inicio futuro,
-    // la promoción queda programada y se señala como tal.
-    async function savePromoSettings(id) {
-        const btn = document.getElementById(`btn-save-manage-${id}`);
-        if (!btn || btn.disabled) return;
 
-        const promoPriceVal = document.getElementById(`manage-price-${id}`).value.trim();
-        const normalPriceVal = document.getElementById(`manage-oldprice-${id}`).value.trim();
-        const promoPrice = promoPriceVal === '' ? NaN : Number(promoPriceVal);
-        const normalPrice = normalPriceVal === '' ? NaN : Number(normalPriceVal);
-        const promoStart = document.getElementById(`manage-start-${id}`).value || null;
-        const promoEnd = document.getElementById(`manage-end-${id}`).value || null;
-        const today = getLocalYYYYMMDD();
+    // Cada presentación elegida recibe su precio promocional exacto.
+    // Las fechas opcionales se comparten entre las presentaciones seleccionadas.
+    async function savePromoSettings(id){
+        const btn=document.getElementById('btn-save-manage-'+id);
+        if(!btn||btn.disabled)return;
+        const product=products.find(p=>String(p.id)===String(id));
+        if(!product)return;
+        const sizes=getProductSizeOptions(product);
+        const start=document.getElementById('manage-start-'+id).value||null;
+        const end=document.getElementById('manage-end-'+id).value||null;
+        const today=getLocalYYYYMMDD();
+        if(start&&end&&start>end)return showPromoError(id,'La fecha de inicio no puede ser posterior a la fecha final.');
+        if(end&&end<today)return showPromoError(id,'La fecha final ya venció. Cámbiala o déjala en blanco.');
 
-        if (!Number.isFinite(normalPrice) || !Number.isFinite(promoPrice)) {
-            return showPromoError(id, 'Ingresa el precio normal y el promocional.');
-        }
-        if (promoPrice < 0 || normalPrice <= 0) {
-            return showPromoError(id, 'El precio normal debe ser mayor que cero y el promocional no puede ser negativo.');
-        }
-        if (promoPrice >= normalPrice) {
-            return showPromoError(id, 'El precio promocional debe ser menor que el normal.');
-        }
-        if (promoStart && promoEnd && promoStart > promoEnd) {
-            return showPromoError(id, 'La fecha de inicio no puede ser posterior a la fecha final.');
-        }
-        if (promoEnd && promoEnd < today) {
-            return showPromoError(id, 'La fecha final ya venció. Actualízala o déjala vacía para activar ahora.');
-        }
-
-        const feedback = document.getElementById(`promo-feedback-${id}`);
-        if (feedback) feedback.style.display = 'none';
-        btn.disabled = true;
-        const originalButtonHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Activando...';
-
-        try {
-            // La promoción de un producto oculto también lo hace visible.
-            const { data, error } = await supabaseClient.from('products')
-                .update({
-                    price: promoPrice,
-                    old_price: normalPrice,
-                    promo: true,
-                    promo_start: promoStart,
-                    promo_end: promoEnd,
-                    active: true
-                }).eq('id', id).select();
-            if (error) throw error;
-            if (!data || data.length !== 1 || data[0].promo !== true) {
-                throw new Error('Supabase no confirmó la activación. Comprueba los permisos de products y vuelve a intentar.');
+        let update;
+        if(sizes.length){
+            const next=[];
+            let selected=0;
+            for(const [index,size] of sizes.entries()){
+                const selectedBox=document.getElementById('promo-size-check-'+id+'-'+index);
+                const input=document.getElementById('promo-size-price-'+id+'-'+index);
+                if(!selectedBox?.checked){
+                    next.push({name:size.name,price:size.price});
+                    continue;
+                }
+                selected++;
+                const raw=input?.value?.trim()||'';
+                const promoPrice=raw===''?NaN:Number(raw);
+                if(!Number.isFinite(promoPrice)||promoPrice<0||promoPrice>=size.price)
+                    return showPromoError(id,'Escribe para '+size.name+' un precio menor que $'+size.price.toFixed(2)+'.');
+                next.push({name:size.name,price:size.price,promoPrice:Math.round(promoPrice*100)/100});
             }
-            // No declaramos éxito ni cerramos el formulario hasta confirmar el guardado.
+            if(!selected)return showPromoError(id,'Selecciona al menos un tamaño para activar su promoción.');
+            update={size_options:next,price:Math.min(...sizes.map(x=>x.price)),
+                old_price:null,promo:true,promo_start:start,promo_end:end,active:true};
+        }else{
+            const promoText=document.getElementById('manage-price-'+id).value.trim();
+            const normalText=document.getElementById('manage-oldprice-'+id).value.trim();
+            const price=promoText===''?NaN:Number(promoText);
+            const normal=normalText===''?NaN:Number(normalText);
+            if(!Number.isFinite(price)||!Number.isFinite(normal))
+                return showPromoError(id,'Ingresa el precio normal y el promocional.');
+            if(normal<=0||price<0||price>=normal)
+                return showPromoError(id,'El precio promocional debe ser menor que el normal.');
+            update={price,old_price:normal,promo:true,promo_start:start,promo_end:end,active:true};
+        }
+
+        const feedback=document.getElementById('promo-feedback-'+id);
+        if(feedback)feedback.style.display='none';
+        btn.disabled=true;
+        const previous=btn.innerHTML;
+        btn.innerHTML='<i class="ph ph-spinner animate-spin"></i> Guardando...';
+        try{
+            const {data,error}=await supabaseClient.from('products').update(update).eq('id',id).select();
+            if(error)throw error;
+            if(!data||data.length!==1||data[0].promo!==true)
+                throw new Error('Supabase no confirmó la activación.');
+            if(sizes.length){
+                const persisted=getProductSizeOptions({sizeOptions:data[0].size_options});
+                if(!persisted.some(x=>x.promoPrice!==null))
+                    throw new Error('Supabase no devolvió los precios promocionales por tamaño.');
+            }
             applySavedProductRow(data[0]);
-            const effective = getEffectiveProductData(products.find(p => String(p.id) === String(id)));
-            showToast(effective.promo ? '✅ Promoción activa y guardada' : '📅 Promoción guardada y programada');
-        } catch (error) {
-            console.error('No se pudo activar la promoción:', error);
-            showPromoError(id, error.message || 'No se pudo guardar la promoción.');
-        } finally {
-            // Si se redibujó la tarjeta, el botón anterior ya no existe.
-            btn.disabled = false;
-            btn.innerHTML = originalButtonHTML;
+            const p=products.find(item=>String(item.id)===String(id));
+            const effective=getEffectiveProductData(p);
+            showToast(effective.promo?'✅ Promoción activa y guardada':'📅 Promoción guardada y programada');
+        }catch(error){
+            console.error('No se pudo activar la promoción:',error);
+            showPromoError(id,error.message||'No se pudo guardar la promoción.');
+        }finally{
+            btn.disabled=false;
+            btn.innerHTML=previous;
         }
     }
 
