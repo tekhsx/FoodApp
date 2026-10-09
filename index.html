@@ -3353,7 +3353,18 @@
     function getProductSizeOptions(product){
         const sizes=Array.isArray(product?.sizeOptions)?product.sizeOptions:[];
         return sizes.filter(x=>x && PRODUCT_SIZE_NAMES.includes(String(x.name)) && Number.isFinite(Number(x.price)) && Number(x.price)>0)
-            .map(x=>({name:String(x.name),price:Number(x.price)}));
+            .map(x=>{
+                const price=Number(x.price);
+                const hasPromo=x.promoPrice!==undefined&&x.promoPrice!==null&&x.promoPrice!=='';
+                const promoPrice=hasPromo&&Number.isFinite(Number(x.promoPrice))&&Number(x.promoPrice)>=0&&Number(x.promoPrice)<price
+                    ?Math.round(Number(x.promoPrice)*100)/100:null;
+                return {name:String(x.name),price,promoPrice};
+            });
+    }
+    function isProductPromoInDates(product){
+        if(!product?.promo)return false;
+        const today=getLocalYYYYMMDD();
+        return !(product.promoStart&&today<product.promoStart)&&!(product.promoEnd&&today>product.promoEnd);
     }
     function toggleProductSizeFields(){
         const enabled=document.getElementById('enableProductSizes').checked;
@@ -3396,11 +3407,16 @@
         return selected;
     }
     function sizePriceForProduct(raw,option){
-        // Las promociones activas aplican su porcentaje de descuento a cada presentación.
-        const effective=getEffectiveProductData(raw);
-        const original=Number(raw.oldPrice)||0;
-        const factor=effective.promo && original>0 ? Math.max(0,Number(effective.price))/original : 1;
-        return Math.round(Number(option.price)*factor*100)/100;
+        if(isProductPromoInDates(raw)){
+            // Cada tamaño mantiene su propio precio promocional.
+            if(option.promoPrice!==null && option.promoPrice!==undefined)
+                return Number(option.promoPrice);
+            // Promociones antiguas de precio único siguen funcionando hasta editarlas.
+            const old=Number(raw.oldPrice);
+            if(raw.oldPrice!==null&&Number.isFinite(old)&&old>0&&Number(raw.price)<old)
+                return Math.round(option.price*Math.max(0,Number(raw.price))/old*100)/100;
+        }
+        return Number(option.price);
     }
     function openProductSizeDialog(id){
         const product=products.find(x=>x.id===id);
@@ -3468,24 +3484,17 @@
     }
 
     function getEffectiveProductData(p) {
-        const today = getLocalYYYYMMDD(); 
-        let isPromo = p.promo;
-        let effectivePrice = p.price;
-        let effectiveOldPrice = p.oldPrice;
-
-        if (p.promo) {
-            if (p.promoStart && today < p.promoStart) {
-                isPromo = false;
-                effectivePrice = p.oldPrice !== null ? p.oldPrice : p.price;
-                effectiveOldPrice = null;
-            }
-            if (p.promoEnd && today > p.promoEnd) {
-                isPromo = false;
-                effectivePrice = p.oldPrice !== null ? p.oldPrice : p.price;
-                effectiveOldPrice = null;
-            }
+        const sizes=getProductSizeOptions(p);
+        if(sizes.length){
+            const active=isProductPromoInDates(p);
+            const discounted=active&&sizes.some(option=>sizePriceForProduct(p,option)<option.price);
+            const price=Math.min(...sizes.map(option=>active?sizePriceForProduct(p,option):option.price));
+            return {...p,promo:discounted,price,oldPrice:null};
         }
-        return { ...p, promo: isPromo, price: effectivePrice, oldPrice: effectiveOldPrice };
+        const active=isProductPromoInDates(p);
+        return {...p,promo:active,
+            price:active?Number(p.price):(p.oldPrice!==null&&p.promo?Number(p.oldPrice):Number(p.price)),
+            oldPrice:active?p.oldPrice:null};
     }
 
     function generateProductCard(p, context = '') {
@@ -4501,7 +4510,8 @@
             promo: row.promo === true,
             promoStart: row.promo_start || null,
             promoEnd: row.promo_end || null,
-            active: row.active === true
+            active: row.active === true,
+            sizeOptions:Array.isArray(row.size_options)?row.size_options:[]
         };
         // Redibuja el panel: el formulario se cierra y aparece el estado real.
         renderHomeViews();
