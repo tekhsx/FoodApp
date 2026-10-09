@@ -3050,7 +3050,7 @@
     function customerCodeFromIdentity(userId, guestDeviceId) {
         const isAccount = userId !== null && userId !== undefined && String(userId).trim() !== '';
         const raw = String(isAccount ? userId : (guestDeviceId || '')).replace(/[^a-z0-9]/gi, '').toUpperCase();
-        return raw ? (isAccount ? 'U-' : 'I-') + raw.slice(-8) : '';
+        return raw ? (isAccount ? 'U-' : 'I-') + raw.slice(-12) : '';
     }
     function customerCodeForOrder(order) {
         return customerCodeFromIdentity(order.userId, order.guestDeviceId);
