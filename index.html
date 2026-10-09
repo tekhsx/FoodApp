@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FoodApp · Menú Digital</title>
+    <title>tu'dale · Menú Digital</title>
     <meta name="theme-color" content="#ef4444">
-    <meta name="description" content="FoodApp: menú digital, promociones y pedidos.">
+    <meta name="description" content="tu'dale: comida rápida, menú digital, promociones y pedidos.">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="FoodApp">
+    <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.10">
-    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
-    <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
+    <meta name="foodapp-version" content="2026.10.09.11">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/tudale-logo.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
     <!-- Phosphor Icons para iconos modernos -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -1883,6 +1883,25 @@
       .order-identity-code { display:inline-flex; align-items:center; padding:3px 7px; border-radius:999px;
           background:rgba(59,130,246,.1); color:#2563eb; font-size:.68rem; font-weight:800;
           letter-spacing:.03em; line-height:1.2; }
+
+/* tu'dale: identidad visual, sin alterar pedidos, promociones, estadísticas o sesiones. */
+.logo {gap:.48rem;white-space:nowrap}
+.logo .tudale-logo-header {width:44px;height:44px;border-radius:50%;background:#000;object-fit:contain;flex-shrink:0;box-shadow:0 2px 10px #0002}
+.logo .tudale-wordmark {color:var(--text-main);font-size:1.2rem;font-weight:850;letter-spacing:-.035em}
+.tv-hero {position:relative}
+.tv-hero .tudale-tv-mosaic-mark {position:absolute;z-index:10;top:clamp(8px,.9vw,18px);right:clamp(8px,.9vw,18px);display:flex;align-items:center;gap:clamp(6px,.6vw,12px);border-radius:999px;padding:clamp(4px,.4vw,8px) clamp(9px,.75vw,15px);border:1px solid rgba(244,175,54,.55);color:#fff;background:rgba(5,5,5,.86);backdrop-filter:blur(5px);box-shadow:0 4px 15px #0005;pointer-events:none}
+.tv-hero .tudale-tv-mosaic-mark img {width:clamp(27px,2.4vw,50px);height:clamp(27px,2.4vw,50px);border-radius:50%;object-fit:contain}
+.tv-hero .tudale-tv-mosaic-mark strong {font-size:clamp(13px,1.3vw,26px);font-weight:850;letter-spacing:-.03em;white-space:nowrap}
+.tv-poster-brand.tudale-tv-brand {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(4px,.5vw,10px);padding:clamp(9px,.8vw,20px)}
+.tv-poster-brand.tudale-tv-brand img {width:clamp(75px,8vw,175px);height:auto;aspect-ratio:1;border-radius:50%;object-fit:contain;background:#000;box-shadow:0 3px 16px #0004}
+.tv-poster-brand.tudale-tv-brand strong {color:#1a160c;font-size:clamp(16px,1.7vw,37px);font-weight:950;letter-spacing:-.04em;line-height:1.05}
+.tv-spotlight-brand.tudale-tv-brand {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(3px,.45vw,10px);padding:clamp(7px,.7vw,16px) 4px;font-size:inherit}
+.tv-spotlight-brand.tudale-tv-brand img {width:clamp(75px,9vw,180px);aspect-ratio:1;border-radius:50%;object-fit:contain;background:#000;box-shadow:0 3px 15px #0003}
+.tv-spotlight-brand.tudale-tv-brand strong {color:#15110a;font-size:clamp(16px,1.65vw,35px);font-weight:900;letter-spacing:-.04em}
+.tv-spotlight-brand.tudale-tv-brand .tudale-tv-subtitle {display:block;font-size:clamp(11px,.78vw,16px);font-weight:750;letter-spacing:.12em}
+.tv-spotlight-bottom .tudale-tv-footer-icon {width:clamp(22px,2vw,41px);height:clamp(22px,2vw,41px);border-radius:50%;background:#000;vertical-align:middle;object-fit:contain}
+@media(max-width:480px){.logo .tudale-logo-header{width:38px;height:38px}.logo .tudale-wordmark{font-size:1.02rem}}
+
     </style>
 </head>
 <body>
@@ -1910,7 +1929,7 @@
     <div id="pushCredentialsDialog" class="push-auth-dialog" hidden>
       <form id="pushCredentialsForm" class="push-auth-panel" aria-label="Consentimiento para notificaciones">
         <h3>¿Quieres activar las notificaciones? 🔔</h3>
-        <p>Recibe avisos de tus pedidos sin mantener FoodApp abierta. Puedes desactivarlos cuando quieras.</p>
+        <p>Recibe avisos de tus pedidos sin mantener tu'dale abierta. Puedes desactivarlos cuando quieras.</p>
         <p id="pushRegistrationError" hidden role="alert" style="color:#b91c1c;background:#fef2f2;padding:10px;border-radius:8px;margin-top:10px;font-size:0.82rem;line-height:1.5;"></p>
         <div class="push-auth-buttons">
           <button type="button" id="pushCancelBtn">Ahora no</button>
@@ -1923,7 +1942,7 @@
             <i class="ph-fill ph-arrows-clockwise" aria-hidden="true"></i>
             <div>
                 <strong>Nueva versión disponible</strong>
-                <p id="pwaUpdateMessage">Hay mejoras disponibles para FoodApp.</p>
+                <p id="pwaUpdateMessage">Hay mejoras disponibles para tu'dale.</p>
             </div>
         </div>
         <div class="pwa-update-actions">
@@ -1935,11 +1954,12 @@
 
     <header>
         <div class="logo">
-            <i class="ph-fill ph-hamburger"></i> FoodApp
+            <img src="./icons/tudale-logo.png" class="tudale-logo-header" alt="Logo de tu'dale">
+            <span class="tudale-wordmark">tu'dale</span>
         </div>
         <div class="header-actions">
             <button id="pushEnableBtn" class="push-enable-btn" type="button" title="Activar notificaciones de pedidos" hidden aria-label="Activar notificaciones de pedidos"><i class="ph ph-bell" aria-hidden="true"></i></button>
-            <button id="pwaInstallBtn" type="button" hidden aria-label="Instalar FoodApp" title="Instalar FoodApp"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="sr-only">Instalar FoodApp</span></button>
+            <button id="pwaInstallBtn" type="button" hidden aria-label="Instalar tu'dale" title="Instalar tu'dale"><i class="ph ph-download-simple" aria-hidden="true"></i><span class="sr-only">Instalar tu'dale</span></button>
             <button id="logoutBtn" onclick="logout()" style="display: none;"><i class="ph ph-sign-out"></i></button>
             <button id="themeToggle" onclick="toggleTheme()"><i class="ph ph-moon"></i></button>
         </div>
@@ -1952,7 +1972,7 @@
             <div class="auth-container">
                 <div style="text-align: center; margin-bottom: 2rem;">
                     <i class="ph-fill ph-hamburger" style="font-size: 4rem; color: var(--primary);"></i>
-                    <h2 style="margin-top: 0.5rem; color: var(--text-main);">Bienvenido a FoodApp</h2>
+                    <h2 style="margin-top: 0.5rem; color: var(--text-main);">Bienvenido a tu'dale</h2>
                     <p style="color: var(--text-muted); font-size: 0.9rem;" id="authSubtitle">Inicia sesión para continuar</p>
                 </div>
                 
@@ -2335,6 +2355,7 @@
                     <section class="tv-hero" id="tvHeroBanner" aria-label="Banner de productos activos">
                         <div class="tv-hero-featured" id="tvHeroMain"></div>
                         <div class="tv-hero-tiles" id="tvHeroTiles"></div>
+                        <div class="tudale-tv-mosaic-mark" aria-label="tu'dale comida rápida"><img src="./icons/tudale-logo.png" alt=""><strong>tu'dale</strong></div>
                     </section>
                     <!-- Pantalla dividida: ofertas a la izquierda y menú a la derecha -->
                     <div class="tv-board-split">
@@ -2357,7 +2378,7 @@
                 <!-- Modelo 2: franja publicitaria amarilla + catálogo oscuro de 8 productos. -->
                 <div class="tv-poster-board" id="tvPosterBoard" hidden aria-label="Menú publicitario amarillo y negro">
                     <aside class="tv-poster-feature">
-                        <div class="tv-poster-brand"><i class="ph-fill ph-hamburger"></i> FoodApp</div>
+                        <div class="tv-poster-brand tudale-tv-brand"><img src="./icons/tudale-logo.png" alt="Logo de tu'dale"><strong>tu'dale</strong></div>
                         <div class="tv-poster-feature-photo" id="tvPosterFeaturedPhoto"></div>
                         <div class="tv-poster-highlight" id="tvPosterHighlight"></div>
                     </aside>
@@ -2376,7 +2397,7 @@
                 <!-- Modelo 3: franja amarilla de menú y anuncio principal destacado. -->
                 <div class="tv-spotlight-board" id="tvSpotlightBoard" hidden aria-label="Anuncio destacado y menú lateral">
                     <aside class="tv-spotlight-sidebar">
-                        <div class="tv-spotlight-brand"><i class="ph-fill ph-hamburger"></i> FoodApp <span style="display:block;font-size:.55em;margin-top:5px">OTROS FAVORITOS</span></div>
+                        <div class="tv-spotlight-brand tudale-tv-brand"><img src="./icons/tudale-logo.png" alt="Logo de tu'dale"><strong>tu'dale</strong><span class="tudale-tv-subtitle">OTROS FAVORITOS</span></div>
                         <div class="tv-spotlight-side-list" id="tvSpotlightSideItems"></div>
                     </aside>
                     <section class="tv-spotlight-main" id="tvSpotlightMain" aria-label="Producto destacado"></section>
@@ -3694,7 +3715,7 @@
             posterHighlight.innerHTML = `<h2>${tvEscape(featured.name)}</h2>${featured.promo && featured.oldPrice != null ? `<s class="tv-poster-highlight-old">Antes ${tvPrice(featured.oldPrice)}</s>` : ''}<strong class="tv-poster-highlight-price">${tvPrice(featured.price)}</strong>`;
         } else {
             posterPhoto.innerHTML = '';
-            posterHighlight.innerHTML = '<h2>Bienvenidos a FoodApp</h2>';
+            posterHighlight.innerHTML = "<h2>Bienvenidos a tu'dale</h2>";
         }
     }
 
@@ -3704,7 +3725,7 @@
         const ordered = [...activeMenu].sort((a, b) => Number(b.promo) - Number(a.promo) || (Number(b.orders) || 0) - (Number(a.orders) || 0));
         if (!ordered.length) {
             side.innerHTML = '<div class="tv-spotlight-side-empty">Próximamente nuevos sabores</div>';
-            main.innerHTML = '<div class="tv-spotlight-no-products">¡Bienvenidos a FoodApp!</div>';
+            main.innerHTML = `<div class="tv-spotlight-no-products">¡Bienvenidos a tu'dale!</div>`;
             return;
         }
         const featuredIndex = tvBannerIndex % ordered.length;
@@ -3728,7 +3749,7 @@
                 <span class="tv-spotlight-price">${tvPrice(featured.price)}</span>
                 ${featured.promo && featured.oldPrice != null ? `<div class="tv-spotlight-old-price">Antes: <s>${tvPrice(featured.oldPrice)}</s></div>` : ''}
             </div>
-            <div class="tv-spotlight-bottom"><i class="ph-fill ph-hamburger"></i><span>FoodApp · ¡Pide tu favorito!</span></div>`;
+            <div class="tv-spotlight-bottom"><img class="tudale-tv-footer-icon" src="./icons/tudale-logo.png" alt=""><span>tu'dale · ¡Pide tu favorito!</span></div>`;
     }
 
     function renderTvView() {
@@ -3767,7 +3788,7 @@
 
         if (!activeMenu.length) {
             hero.classList.add('tv-hero-only');
-            featured.innerHTML = '<div class="tv-featured-heading"><span class="tv-eyebrow">MENÚ DIGITAL</span><h2>Bienvenidos a <span>FoodApp</span></h2></div>';
+            featured.innerHTML = `<div class="tv-featured-heading"><span class="tv-eyebrow">MENÚ DIGITAL</span><h2>Bienvenidos a <span>tu'dale</span></h2></div>`;
             tiles.innerHTML = '';
             return;
         }
@@ -4782,7 +4803,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-10" defer></script>
-<script src="./push-notifications.js?v=20261009-10" defer></script>
+<script src="./pwa.js?v=20261009-11" defer></script>
+<script src="./push-notifications.js?v=20261009-11" defer></script>
 </body>
 </html>

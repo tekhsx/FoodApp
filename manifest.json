@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "FoodApp - Menú Digital",
-  "short_name": "FoodApp",
-  "description": "Menú digital, promociones y pedidos de FoodApp.",
+  "name": "tu'dale - Menú Digital",
+  "short_name": "tu'dale",
+  "description": "Comida rápida tu'dale: menú, promociones y pedidos.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

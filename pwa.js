@@ -1,4 +1,4 @@
-/* FoodApp PWA: instalación y aviso de nuevas versiones. */
+/* tu\'dale PWA: instalación y aviso de nuevas versiones. */
 (() => {
   'use strict';
   const VERSION = document.querySelector('meta[name="foodapp-version"]')?.content || 'sin-version';
@@ -44,7 +44,7 @@
       catch (error) { console.warn('No se pudo abrir el instalador:', error); }
       refreshInstallButton();
     } else if (isIosSafari) {
-      const message = 'Para instalar FoodApp: toca Compartir y luego “Añadir a pantalla de inicio”.';
+      const message = 'Para instalar tu\'dale: toca Compartir y luego “Añadir a pantalla de inicio”.';
       if (typeof showToast === 'function') showToast(message);
       else alert(message);
     }
@@ -100,7 +100,7 @@
       }
       await checkPublishedVersion();
     } catch (error) {
-      console.debug('Revisión de FoodApp pendiente de conexión:', error);
+      console.debug('Revisión de tu\'dale pendiente de conexión:', error);
     } finally {
       checking = false;
     }
@@ -141,7 +141,7 @@
       updateButton.disabled = false;
       updateButton.textContent = 'Reintentar actualización';
       if (updateMessage) updateMessage.textContent = 'No se pudo actualizar. Comprueba la conexión y vuelve a intentarlo.';
-      console.warn('Error al actualizar FoodApp:', error);
+      console.warn('Error al actualizar tu\'dale:', error);
     }
   });
 

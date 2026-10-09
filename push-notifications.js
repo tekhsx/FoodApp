@@ -140,7 +140,7 @@
     const session = identity?.id ? storedSession(identity) : null;
     if (identity?.id && !session) throw new Error('Vuelve a iniciar sesión en FoodApp para autorizar las notificaciones una sola vez.');
     const reg = await swRegistration();
-    if (!reg.active) throw new Error('El servicio de FoodApp se está instalando. Prueba en unos segundos.');
+    if (!reg.active) throw new Error('El servicio de tu\'dale se está instalando. Prueba en unos segundos.');
     let sub = await reg.pushManager.getSubscription();
     if (!sub && existingOnly) return false;
     const key = await getVapidKey();

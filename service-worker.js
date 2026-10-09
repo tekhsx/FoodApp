@@ -1,7 +1,7 @@
-/* FoodApp PWA: caché de la aplicación, no de pedidos ni de usuarios. */
+/* tu'dale PWA: caché de la aplicación, no de pedidos ni de usuarios. */
 'use strict';
 
-const CACHE_VERSION = 'foodapp-20261009-v10';
+const CACHE_VERSION = 'foodapp-20261009-v11';
 const APP_CACHE = `foodapp-shell-${CACHE_VERSION}`;
 const CDN_CACHE = `foodapp-libs-${CACHE_VERSION}`;
 const CACHE_PREFIX = 'foodapp-';
@@ -13,8 +13,7 @@ const APP_SHELL = [
   './pwa.js',
   './push-notifications.js',
   './offline.html',
-  './icons/icon.svg',
-  './icons/icon-48.png',
+  './icons/tudale-logo.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-192.png',
@@ -121,7 +120,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   let payload = {};
   try { payload = event.data ? event.data.json() : {}; } catch (_) { /* mensaje sin JSON */ }
-  const title = typeof payload.title === 'string' ? payload.title : 'FoodApp';
+  const title = typeof payload.title === 'string' ? payload.title : "tu'dale";
   const safeView = payload.view === 'admin-orders' ? 'admin-orders' : 'my-orders';
   event.waitUntil(self.registration.showNotification(title, {
     body: String(payload.body || 'Tienes novedades sobre tu pedido.'),
