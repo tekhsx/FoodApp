@@ -1932,6 +1932,35 @@
 .product-size-dialog-panel>.checkout-btn{margin-top:4px}
 .cart-size-label{display:block;color:var(--text-muted);font-size:.77rem;margin:3px 0}
 
+
+/* Carrito claro, botones de regresar, eliminar y cancelar */
+.cart-page-header{display:flex;align-items:center;gap:12px;padding:0 1rem;margin-bottom:13px;flex-wrap:wrap}
+.cart-page-header .section-title{margin:0;flex:1;white-space:nowrap}
+.cart-back-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-color);color:var(--text-main);font-weight:800;cursor:pointer;font-size:.85rem}
+.cart-back-btn i{font-size:1.15rem}
+.cart-clear-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;padding:13px 8px;border-radius:12px;border:1px solid #fca5a5;background:transparent;color:#dc2626;font-weight:800;cursor:pointer}
+.cart-clear-btn:hover{background:rgba(239,68,68,.07)}
+.cart-product-row{display:flex;gap:12px;align-items:flex-start;padding:13px;margin:0 0 10px;background:var(--surface-color);border:1px solid var(--border);border-radius:15px;min-width:0}
+.cart-product-photo{width:72px;height:72px;flex:none;border-radius:11px;object-fit:cover;background:var(--bg-color)}
+.cart-product-details{min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+.cart-product-details .product-name{font-weight:850;line-height:1.3;font-size:.93rem;overflow-wrap:anywhere}
+.cart-product-details .product-price{font-size:1rem;font-weight:900}
+.cart-product-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px}
+.cart-product-controls .cart-item-actions{padding:0!important;display:flex;align-items:center;gap:8px}
+.cart-remove-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:transparent;color:#dc2626;cursor:pointer;font-weight:800;font-size:.79rem;padding:9px 4px}
+.cart-remove-btn i{font-size:1.05rem}
+.cart-item-actions .cart-qty-btn{width:34px;height:34px}
+.cart-quantity-label{font-variant-numeric:tabular-nums;font-weight:800;min-width:22px;text-align:center}
+#emptyCartState .cart-back-btn{margin-top:14px}
+.product-size-edit-groups{display:grid;gap:9px}
+.product-size-more{border-top:1px dashed var(--border);margin-top:8px;padding-top:9px}
+.product-size-more summary{cursor:pointer;font-size:.84rem;color:var(--primary);font-weight:800;padding:7px 0}
+.product-size-order-row{border-radius:12px;padding:13px 8px}
+.product-size-quantity input{appearance:textfield;-moz-appearance:textfield}
+.product-size-quantity input::-webkit-inner-spin-button,.product-size-quantity input::-webkit-outer-spin-button{appearance:none;margin:0}
+.size-continue-btn{display:block;width:100%;border:0;background:transparent;color:var(--text-muted);padding:12px;margin-top:5px;font-size:.83rem;font-weight:750;cursor:pointer}
+@media(max-width:400px){.cart-page-header{gap:8px}.cart-page-header .section-title{font-size:1.1rem}.cart-product-photo{width:62px;height:62px}.cart-product-row{gap:9px}.cart-remove-btn{padding:7px 2px}}
+
     </style>
 </head>
 <body>
@@ -1951,10 +1980,11 @@
       <h3 id="productSizeDialogTitle">Elegir tamaños</h3>
       <button type="button" aria-label="Cerrar" onclick="closeProductSizeDialog()"><i class="ph ph-x"></i></button>
     </div>
-    <p>Selecciona cuántas unidades deseas de cada tamaño.</p>
+    <p>Usa los botones <strong>+ y −</strong> para elegir cuántas quieres de cada tamaño. Puedes combinar varios.</p>
     <div id="productSizeQuantityList"></div>
     <div class="product-size-dialog-total"><span>Total seleccionado</span><strong id="productSizeSelectionTotal">$0.00</strong></div>
-    <button class="checkout-btn" type="button" onclick="addSelectedProductSizes()">Agregar al carrito</button>
+    <button class="checkout-btn" id="addSelectedSizesBtn" type="button" onclick="addSelectedProductSizes()">Agregar al carrito</button>
+    <button class="size-continue-btn" type="button" onclick="closeProductSizeDialog()">Seguir mirando el menú</button>
   </div>
 </div>
     <div id="guestNameDialog" class="push-auth-dialog" hidden>
@@ -2105,7 +2135,10 @@
 
         <!-- ================= CART VIEW ================= -->
         <section id="view-cart" class="view">
-            <h2 class="section-title">Mi Pedido</h2>
+            <div class="cart-page-header">
+                <button type="button" class="cart-back-btn" onclick="navigate('menu')" aria-label="Volver al menú sin perder el carrito"><i class="ph ph-arrow-left"></i> Seguir comprando</button>
+                <h2 class="section-title">Mi carrito</h2>
+            </div>
             <div id="cartItemsContainer" class="product-list">
                 <!-- Items del carrito -->
             </div>
@@ -2115,11 +2148,15 @@
                     <span id="cartTotal">$0.00</span>
                 </div>
                 <button class="checkout-btn" onclick="checkout()">Confirmar Pedido</button>
+                <button type="button" class="cart-clear-btn" onclick="clearCart()" aria-label="Cancelar pedido y vaciar carrito">
+                    <i class="ph ph-trash"></i> Cancelar pedido / Vaciar carrito
+                </button>
             </div>
             <div id="emptyCartState" class="empty-state">
                 <i class="ph ph-shopping-bag-open"></i>
                 <h3>Tu carrito está vacío</h3>
                 <p>¡Agrega algo delicioso del menú!</p>
+                <button type="button" class="cart-back-btn" onclick="navigate('menu')"><i class="ph ph-arrow-left"></i> Ir al menú</button>
             </div>
         </section>
 
@@ -3265,13 +3302,21 @@
     function populateProductSizeFields(product=null){
         const saved=getProductSizeOptions(product);
         document.getElementById('enableProductSizes').checked=saved.length>0;
-        document.getElementById('productSizePriceRows').innerHTML=PRODUCT_SIZE_NAMES.map((name,index)=>{
+        const makeRow=(name,index)=>{
             const row=saved.find(x=>x.name===name);
             return '<div class="product-size-edit-row"><label><input type="checkbox" data-size-check="'+index+'" '+
                 (row?'checked':'')+' onchange="toggleSizePriceInput('+index+')">'+escapeCustomerHtml(name)+'</label>'+
                 '<input type="number" inputmode="decimal" min="0.01" step="0.01" data-size-price="'+index+
                 '" placeholder="$ Precio" '+(row?'value="'+row.price.toFixed(2)+'"':'disabled')+'></div>';
-        }).join('');
+        };
+        const main=['Clásico','Mediano','Extra grande'];
+        const others=PRODUCT_SIZE_NAMES.filter(name=>!main.includes(name));
+        const otherSelected=others.some(name=>saved.some(x=>x.name===name));
+        document.getElementById('productSizePriceRows').innerHTML=
+            '<div class="product-size-edit-groups"><div class="product-size-primary">'+
+            main.map(name=>makeRow(name,PRODUCT_SIZE_NAMES.indexOf(name))).join('')+'</div>'+
+            '<details class="product-size-more" '+(otherSelected?'open':'')+'><summary>Otros tamaños (Pequeña, Grande…)</summary>'+
+            others.map(name=>makeRow(name,PRODUCT_SIZE_NAMES.indexOf(name))).join('')+'</details></div>';
         toggleProductSizeFields();
     }
     function toggleSizePriceInput(index){
@@ -3308,7 +3353,7 @@
         const sizes=getProductSizeOptions(product);
         if(!sizes.length)return;
         choosingProductSizeId=id;
-        document.getElementById('productSizeDialogTitle').textContent=product.name+' · Tamaños';
+        document.getElementById('productSizeDialogTitle').textContent=product.name+' · Elige tus tamaños';
         document.getElementById('productSizeQuantityList').innerHTML=sizes.map((item,index)=>{
             const price=sizePriceForProduct(product,item);
             return '<div class="product-size-order-row"><div><strong>'+escapeCustomerHtml(item.name)+'</strong>'+
