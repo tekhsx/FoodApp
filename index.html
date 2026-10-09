@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.5">
+    <meta name="foodapp-version" content="2026.10.09.6">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -1766,15 +1766,13 @@
       </form>
     </div>
     <div id="pushCredentialsDialog" class="push-auth-dialog" hidden>
-      <form id="pushCredentialsForm" class="push-auth-panel">
-        <h3>Activar notificaciones 🔔</h3>
-        <p>Verifica tu contraseña para recibir avisos únicamente de tus pedidos.</p>
-        <label for="pushAuthPassword">Contraseña de tu cuenta</label>
-        <input type="password" id="pushAuthPassword" autocomplete="current-password" required>
+      <form id="pushCredentialsForm" class="push-auth-panel" aria-label="Consentimiento para notificaciones">
+        <h3>¿Quieres activar las notificaciones? 🔔</h3>
+        <p>Recibe avisos de tus pedidos sin mantener FoodApp abierta. Puedes desactivarlos cuando quieras.</p>
         <p id="pushRegistrationError" hidden role="alert" style="color:#b91c1c;background:#fef2f2;padding:10px;border-radius:8px;margin-top:10px;font-size:0.82rem;line-height:1.5;"></p>
         <div class="push-auth-buttons">
-          <button type="button" id="pushCancelBtn">Cancelar</button>
-          <button type="submit">Activar</button>
+          <button type="button" id="pushCancelBtn">Ahora no</button>
+          <button type="submit" id="pushConfirmBtn">Activar notificaciones</button>
         </div>
       </form>
     </div>
@@ -4208,7 +4206,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-5" defer></script>
-<script src="./push-notifications.js?v=20261009-5" defer></script>
+<script src="./pwa.js?v=20261009-6" defer></script>
+<script src="./push-notifications.js?v=20261009-6" defer></script>
 </body>
 </html>
