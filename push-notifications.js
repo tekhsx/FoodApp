@@ -228,8 +228,13 @@
     return getDevice().deviceId;
   }
   async function disconnect() {
+    const activeSession = storedSession(getIdentity());
     localStorage.removeItem(sessionKey);
     localStorage.removeItem(bindingKey);
+    if (activeSession?.sessionToken) {
+      try { await request('logout', {sessionToken: activeSession.sessionToken}); }
+      catch (error) { console.warn('No se pudo revocar la sesión push:', error); }
+    }
     if (!supported) return;
     const device = getDevice();
     try {
