@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.9">
+    <meta name="foodapp-version" content="2026.10.09.10">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -1880,6 +1880,9 @@
       #guestNameDialog .guest-name-error { color:#b91c1c; font-size:.8rem; font-weight:600; }
       .order-customer { font-size:.86rem; font-weight:700; margin:.4rem 0 .2rem; color:var(--text-main); display:flex; gap:.35rem; align-items:center; flex-wrap:wrap; }
       .order-customer i { color:var(--primary); font-size:1rem; }
+      .order-identity-code { display:inline-flex; align-items:center; padding:3px 7px; border-radius:999px;
+          background:rgba(59,130,246,.1); color:#2563eb; font-size:.68rem; font-weight:800;
+          letter-spacing:.03em; line-height:1.2; }
     </style>
 </head>
 <body>
@@ -2678,7 +2681,8 @@
                 if (currentPending > previousPending && currentUser?.role === 'admin') {
                     const recent = orders.find(o => o.status === 'Pendiente');
                     const displayName = (recent?.customerName || 'Cliente').slice(0, 28);
-                    showToast('🔔 Nuevo pedido · ' + displayName);
+                    const code = recent ? customerCodeForOrder(recent) : '';
+                    showToast('🔔 Nuevo pedido · ' + displayName + (code ? ' · ' + code : ''));
                 }
 
                 // Refrescar las vistas que muestran pedidos
@@ -3042,6 +3046,15 @@
         return normalizeCustomerName(row.customer_name) ||
             (row.user_id ? (normalizeCustomerName(appUsers.find(u => u.id === row.user_id)?.name) || 'Cliente registrado') : 'Invitado sin identificar');
     }
+    // Código visual estable: nombres iguales no implican la misma cuenta ni dispositivo.
+    function customerCodeFromIdentity(userId, guestDeviceId) {
+        const isAccount = userId !== null && userId !== undefined && String(userId).trim() !== '';
+        const raw = String(isAccount ? userId : (guestDeviceId || '')).replace(/[^a-z0-9]/gi, '').toUpperCase();
+        return raw ? (isAccount ? 'U-' : 'I-') + raw.slice(-8) : '';
+    }
+    function customerCodeForOrder(order) {
+        return customerCodeFromIdentity(order.userId, order.guestDeviceId);
+    }
     function closeGuestNameDialog() {
         document.getElementById('guestNameDialog').hidden = true;
         document.getElementById('guestNameError').hidden = true;
@@ -3056,8 +3069,11 @@
         }
         closeGuestNameDialog();
         currentUser = { id: null, role: 'user', email: 'cliente', name, isGuest: true };
+        const deviceId = window.FoodAppPush?.guestDeviceId() || null;
+        currentUser.guestDeviceId = deviceId;
         localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
-        showToast('¡Bienvenido, ' + name + '!');
+        const code = customerCodeFromIdentity(null, deviceId);
+        showToast('¡Bienvenido, ' + name + '!' + (code ? ' · ' + code : ''));
         setupAndEnterApp();
         void window.FoodAppPush?.associateGuest();
     }
@@ -4473,7 +4489,7 @@
     const key=customerIdentity(o);
     const fallback=appUsers.find(u=>String(u.id)===String(o.userId))?.name;
     const name=String(o.customerName||fallback||'Invitado sin identificar').trim();
-    const record=ranking.get(key)||{name,orders:0,amount:0};
+    const record=ranking.get(key)||{name,code:customerCodeForOrder(o),orders:0,amount:0};
     record.orders++;
     record.amount+=Number(o.total)||0;
     ranking.set(key,record);
@@ -4482,7 +4498,7 @@
   $('dashboardTopCustomers').innerHTML=topClients.length?topClients.map((c,i)=>
     `<div class="dash-rank-row"><span class="dash-rank-badge">${i+1}</span><span>
       <span class="dash-rank-name">${safeText(c.name)}</span>
-      <span class="dash-rank-caption">${c.orders} ${c.orders===1?'pedido':'pedidos'}</span></span>
+      <span class="dash-rank-caption">${c.code?safeText(c.code)+' · ':''}${c.orders} ${c.orders===1?'pedido':'pedidos'}</span></span>
       <span class="dash-rank-spend">${money(c.amount)}</span></div>`).join('')
     :'<p class="dash-empty">No hay clientes con pedidos en las fechas seleccionadas.</p>';
 }
@@ -4653,7 +4669,8 @@
                         <div>
                             <strong style="color:var(--text-main)">Pedido #${o.id.toString().slice(-4)}</strong>
                             <div style="font-size:0.7rem; color:var(--text-muted)">${o.date}</div>
-                            <div class="order-customer"><i class="ph-fill ph-user-circle" aria-hidden="true"></i> ${escapeCustomerHtml(o.customerName)}</div>
+                            <div class="order-customer"><i class="ph-fill ph-user-circle" aria-hidden="true"></i> ${escapeCustomerHtml(o.customerName)}
+                              ${customerCodeForOrder(o) ? `<span class="order-identity-code">${customerCodeForOrder(o)}</span>` : ''}</div>
                             ${timerHtml}
                         </div>
                         <div class="order-status ${statusClass}">${o.status}</div>
@@ -4765,7 +4782,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-9" defer></script>
-<script src="./push-notifications.js?v=20261009-9" defer></script>
+<script src="./pwa.js?v=20261009-10" defer></script>
+<script src="./push-notifications.js?v=20261009-10" defer></script>
 </body>
 </html>
