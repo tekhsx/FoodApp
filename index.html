@@ -1902,6 +1902,36 @@
 .tv-spotlight-bottom .tudale-tv-footer-icon {width:clamp(22px,2vw,41px);height:clamp(22px,2vw,41px);border-radius:50%;background:#000;vertical-align:middle;object-fit:contain}
 @media(max-width:480px){.logo .tudale-logo-header{width:38px;height:38px}.logo .tudale-wordmark{font-size:1.02rem}}
 
+
+#productSizeFields[hidden],#productSizeDialog[hidden]{display:none!important}
+.product-size-settings{border:1px solid var(--border);border-radius:14px;margin-top:14px;padding:13px;background:var(--surface-color)}
+.product-size-toggle{display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text-main)}
+.product-size-toggle input{width:20px;height:20px;accent-color:var(--primary);flex:0 0 20px}
+.product-size-toggle span{display:flex;flex-direction:column;gap:4px}
+.product-size-toggle small{font-size:.74rem;color:var(--text-muted);line-height:1.4}
+#productSizeFields{border-top:1px solid var(--border);margin-top:12px;padding-top:12px}
+#productSizeFields p{font-size:.78rem;color:var(--text-muted);margin:0 0 10px}
+.product-size-edit-row{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:7px 0}
+.product-size-edit-row label{flex:1;display:flex;align-items:center;gap:9px;font-weight:650;font-size:.84rem;color:var(--text-main)}
+.product-size-edit-row label input{width:17px;height:17px;accent-color:var(--primary)}
+.product-size-edit-row input[type=number]{width:110px;max-width:45%;border:1px solid var(--border);border-radius:9px;padding:10px;background:var(--bg-color);color:var(--text-main);font:inherit;font-size:.85rem}
+.product-size-dialog{position:fixed;inset:0;background:rgba(7,12,23,.68);display:flex;justify-content:center;align-items:center;padding:18px;z-index:10050;backdrop-filter:blur(4px)}
+.product-size-dialog-panel{width:min(100%,480px);max-height:92dvh;overflow-y:auto;border-radius:20px;background:var(--surface-color);padding:20px;color:var(--text-main);box-shadow:0 18px 55px #0005}
+.product-size-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.product-size-dialog-head h3{margin:0;font-size:1.18rem}
+.product-size-dialog-head button{border:0;border-radius:9px;padding:9px;cursor:pointer;background:var(--bg-color);color:var(--text-main);font-size:1.3rem}
+.product-size-dialog-panel>p{margin:9px 0 16px;color:var(--text-muted);font-size:.8rem}
+.product-size-order-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.product-size-order-row strong{display:block;font-size:.93rem}
+.product-size-order-row small{display:block;color:var(--primary);font-weight:750;margin-top:3px;font-size:.85rem}
+.product-size-quantity{display:flex;align-items:center;gap:7px}
+.product-size-quantity button{width:33px;height:33px;border-radius:10px;border:1px solid var(--border);background:var(--bg-color);color:var(--text-main);font-weight:900;font-size:1.12rem;cursor:pointer}
+.product-size-quantity input{width:44px;height:33px;border-radius:9px;text-align:center;border:1px solid var(--border);background:var(--surface-color);color:var(--text-main);font:inherit;font-weight:700}
+.product-size-dialog-total{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:16px 0}
+.product-size-dialog-total strong{color:var(--primary);font-size:1.35rem}
+.product-size-dialog-panel>.checkout-btn{margin-top:4px}
+.cart-size-label{display:block;color:var(--text-muted);font-size:.77rem;margin:3px 0}
+
     </style>
 </head>
 <body>
@@ -1913,6 +1943,20 @@
     <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
 
     <!-- Nombre completo del cliente invitado (sin crear cuenta). -->
+
+<!-- Selector de tamaños: admite cantidades diferentes en una sola compra -->
+<div id="productSizeDialog" class="product-size-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="productSizeDialogTitle">
+  <div class="product-size-dialog-panel">
+    <div class="product-size-dialog-head">
+      <h3 id="productSizeDialogTitle">Elegir tamaños</h3>
+      <button type="button" aria-label="Cerrar" onclick="closeProductSizeDialog()"><i class="ph ph-x"></i></button>
+    </div>
+    <p>Selecciona cuántas unidades deseas de cada tamaño.</p>
+    <div id="productSizeQuantityList"></div>
+    <div class="product-size-dialog-total"><span>Total seleccionado</span><strong id="productSizeSelectionTotal">$0.00</strong></div>
+    <button class="checkout-btn" type="button" onclick="addSelectedProductSizes()">Agregar al carrito</button>
+  </div>
+</div>
     <div id="guestNameDialog" class="push-auth-dialog" hidden>
       <form id="guestNameForm" class="push-auth-panel" onsubmit="submitGuestName(event)">
         <h3>¿A nombre de quién será el pedido? 🍔</h3>
@@ -2310,6 +2354,17 @@
                     </select>
                 </div>
                 
+
+<div class="product-size-settings">
+  <label class="product-size-toggle">
+    <input type="checkbox" id="enableProductSizes" onchange="toggleProductSizeFields()">
+    <span><strong>Precios según el tamaño</strong><small>Activa los tamaños disponibles y escribe el precio de cada uno.</small></span>
+  </label>
+  <div id="productSizeFields" hidden>
+    <p>Selecciona las presentaciones que vendes.</p>
+    <div id="productSizePriceRows"></div>
+  </div>
+</div>
                 <!-- Input para subir imagen desde Galería/Cámara -->
                 <label style="font-size:0.8rem; color:var(--text-muted); margin-top: 1rem; display: block;">Imagen del Producto (Galería o Cámara)</label>
                 <input type="file" id="addImageFile" class="admin-input" accept="image/*" style="margin-top: 0.2rem; padding: 0.5rem; background: var(--surface-color);">
