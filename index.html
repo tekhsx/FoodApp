@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.6">
+    <meta name="foodapp-version" content="2026.10.09.7">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -589,6 +589,89 @@
             position: relative;
             height: 220px;
             width: 100%;
+        }
+
+
+        /* FoodApp — Resumen comercial v2; estilos encapsulados para no alterar otros módulos */
+        .dashboard-v2 { padding-bottom: 1.5rem; }
+        .dashboard-v2 .dash-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0 16px 12px; }
+        .dashboard-v2 .dash-metric {
+            min-width:0; min-height:132px; padding:17px 15px 14px;
+            background:var(--surface-color); border:1px solid var(--border);
+            border-radius:19px; display:flex; flex-direction:column; gap:10px;
+            box-shadow:0 3px 14px rgba(15,23,42,.035); position:relative; overflow:hidden;
+        }
+        .dashboard-v2 .dash-metric::before { content:''; width:58px; height:58px; background:var(--metric-soft);
+            border-radius:50%; opacity:.55; position:absolute; right:-30px; top:-24px; pointer-events:none; }
+        .dashboard-v2 .dash-metric .dash-icon { width:37px; height:37px; display:grid; place-items:center;
+            font-size:20px; border-radius:12px; background:var(--metric-soft); color:var(--metric-color); }
+        .dashboard-v2 .dash-metric .dash-label { font-size:.76rem; line-height:1.26;
+            color:var(--text-muted); font-weight:650; margin:0; }
+        .dashboard-v2 .dash-metric .dash-value { font-size:clamp(1.05rem,3.4vw,1.48rem);
+            line-height:1.16; letter-spacing:-.035em; font-weight:800; color:var(--text-main);
+            margin:4px 0 0; overflow-wrap:anywhere; }
+        .dashboard-v2 .dash-metric .dash-sub { display:block; min-height:16px; margin-top:5px;
+            font-size:.68rem; line-height:1.32; color:var(--text-muted); }
+        .dashboard-v2 .dash-metric.tone-green { --metric-color:#07976a; --metric-soft:rgba(16,185,129,.14); border-color:rgba(16,185,129,.18); }
+        .dashboard-v2 .dash-metric.tone-rose { --metric-color:#f43f5e; --metric-soft:rgba(244,63,94,.13); border-color:rgba(244,63,94,.17); }
+        .dashboard-v2 .dash-metric.tone-blue { --metric-color:#2182ef; --metric-soft:rgba(59,130,246,.13); border-color:rgba(59,130,246,.17); }
+        .dashboard-v2 .dash-metric.tone-violet { --metric-color:#8255f6; --metric-soft:rgba(139,92,246,.14); border-color:rgba(139,92,246,.18); }
+        .dashboard-v2 .dash-metric.tone-amber { --metric-color:#e49b07; --metric-soft:rgba(245,158,11,.15); border-color:rgba(245,158,11,.18); }
+        .dashboard-v2 .dash-metric.tone-teal { --metric-color:#0aafaa; --metric-soft:rgba(20,184,166,.14); border-color:rgba(20,184,166,.18); }
+        .dashboard-v2 .dash-context { margin:2px 17px 15px; display:flex; align-items:center; gap:6px;
+            font-size:.73rem; color:var(--text-muted); }
+        .dashboard-v2 .dash-panel { background:var(--surface-color); border:1px solid var(--border);
+            border-radius:20px; margin:0 16px 14px; padding:17px 15px; box-shadow:0 3px 14px rgba(15,23,42,.035); }
+        .dashboard-v2 .dash-panel-head { display:flex; align-items:flex-start; gap:10px;
+            flex-wrap:wrap; justify-content:space-between; margin-bottom:14px; }
+        .dashboard-v2 .dash-heading { display:flex; align-items:center; gap:10px; min-width:0; }
+        .dashboard-v2 .dash-heading-icon { background:rgba(139,92,246,.12); color:#8255f6;
+            border-radius:11px; width:36px; height:36px; flex:0 0 36px; display:grid; place-items:center;
+            font-size:19px; }
+        .dashboard-v2 .dash-heading h3 { color:var(--text-main); font-size:1.03rem; margin:0; font-weight:800; }
+        .dashboard-v2 .dash-panel-sub { color:var(--text-muted); font-size:.73rem; margin:4px 0 0; line-height:1.45; }
+        .dashboard-v2 .dash-dates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:10px; }
+        .dashboard-v2 .dash-date-field { min-width:0; display:flex; flex-direction:column; gap:4px; }
+        .dashboard-v2 .dash-date-field label { color:var(--text-muted); font-size:.7rem; font-weight:650; }
+        .dashboard-v2 .dash-date-field input { box-sizing:border-box; min-width:0; width:100%; max-width:100%;
+            border-radius:10px; border:1px solid var(--border); padding:9px 7px;
+            color:var(--text-main); background:var(--bg-color); font:inherit; font-size:.76rem; }
+        .dashboard-v2 .dash-quick { display:flex; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
+        .dashboard-v2 .dash-quick button { background:var(--bg-color); border:1px solid var(--border);
+            border-radius:999px; color:var(--text-main); padding:6px 12px; font-size:.73rem;
+            cursor:pointer; font-weight:650; }
+        .dashboard-v2 .dash-quick button:focus-visible,
+        .dashboard-v2 .dash-date-field input:focus-visible { outline:2px solid #3b82f6; outline-offset:2px; }
+        .dashboard-v2 .dash-chart-wrap { height:242px; position:relative; width:100%; }
+        .dashboard-v2 .dash-category-row { display:grid; grid-template-columns: minmax(0,1fr); gap:15px; }
+        .dashboard-v2 .dash-donut { height:200px; width:100%; position:relative; }
+        .dashboard-v2 .dash-legend { display:grid; gap:10px; align-content:center; }
+        .dashboard-v2 .dash-legend-item { display:grid; grid-template-columns:10px minmax(0,1fr) auto;
+            gap:9px; align-items:center; font-size:.78rem; color:var(--text-main); }
+        .dashboard-v2 .dash-dot { width:10px; height:10px; border-radius:50%; }
+        .dashboard-v2 .dash-legend-item strong { font-weight:750; font-variant-numeric:tabular-nums; }
+        .dashboard-v2 .dash-legend-caption { font-size:.69rem; color:var(--text-muted); }
+        .dashboard-v2 .dash-ranking { display:grid; gap:0; }
+        .dashboard-v2 .dash-rank-row { display:grid; grid-template-columns:30px minmax(0,1fr) auto;
+            align-items:center; column-gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+        .dashboard-v2 .dash-rank-row:last-child { border-bottom:0; }
+        .dashboard-v2 .dash-rank-badge { width:29px; height:29px; display:grid; place-items:center;
+            border-radius:50%; font-size:.82rem; font-weight:800; background:var(--bg-color); color:var(--text-main); }
+        .dashboard-v2 .dash-rank-row:first-child .dash-rank-badge { color:#965400; background:rgba(245,158,11,.2); }
+        .dashboard-v2 .dash-rank-name { font-weight:750; font-size:.82rem; color:var(--text-main); overflow-wrap:anywhere; }
+        .dashboard-v2 .dash-rank-caption { display:block; color:var(--text-muted); font-size:.71rem; margin-top:3px; }
+        .dashboard-v2 .dash-rank-spend { text-align:right; font-size:.85rem; font-weight:800;
+            color:var(--text-main); white-space:nowrap; font-variant-numeric:tabular-nums; }
+        .dashboard-v2 .dash-empty { font-size:.79rem; color:var(--text-muted); padding:16px 0; text-align:center; }
+        @media (min-width:730px) {
+            .dashboard-v2 .dash-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
+            .dashboard-v2 .dash-category-row { grid-template-columns:220px minmax(0,1fr); }
+        }
+        @media (max-width:360px) {
+            .dashboard-v2 .dash-metrics { gap:9px; padding:0 10px 10px; }
+            .dashboard-v2 .dash-metric { padding:13px 11px; }
+            .dashboard-v2 .dash-panel { margin:0 10px 12px; padding:14px 11px; }
+            .dashboard-v2 .dash-metric .dash-value { font-size:1.03rem; }
         }
 
         /* Admin Sub-view Headers */
@@ -1958,49 +2041,97 @@
             </div>
         </section>
 
-        <!-- ================= ADMIN: STATS ================= -->
-        <section id="view-admin-stats" class="view">
-            <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
-                <h2>Resumen</h2>
-            </div>
-            <div class="dashboard-grid">
-                <div class="stat-card">
-                    <i class="ph-fill ph-currency-dollar stat-icon"></i>
-                    <div class="stat-info">
-                        <p>Total Ingresos</p>
-                        <h3 id="dashTotalSales">$0.00</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="ph-fill ph-shopping-bag stat-icon"></i>
-                    <div class="stat-info">
-                        <p>Pedidos Totales</p>
-                        <h3 id="dashTotalOrders">0</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="ph-fill ph-star stat-icon"></i>
-                    <div class="stat-info">
-                        <p>Producto Estrella</p>
-                        <h3 id="dashTopProduct">-</h3>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <i class="ph-fill ph-fire stat-icon"></i>
-                    <div class="stat-info">
-                        <p>Combo Más Vendido</p>
-                        <h3 id="dashTopCombo">-</h3>
-                    </div>
-                </div>
-            </div>
 
-            <div class="chart-wrapper">
-                <h4>Ventas por Categoría</h4>
-                <div class="canvas-container">
-                    <canvas id="salesChart"></canvas>
-                </div>
+        <!-- ================= ADMIN: STATS ================= -->
+        <section id="view-admin-stats" class="view dashboard-v2">
+          <div class="back-header">
+            <button class="back-btn" onclick="navigate('admin')" aria-label="Volver al panel administrativo"><i class="ph ph-arrow-left"></i></button>
+            <h2>Resumen</h2>
+          </div>
+
+          <div class="dash-metrics">
+            <div class="dash-metric tone-green">
+              <span class="dash-icon"><i class="ph-fill ph-currency-dollar"></i></span>
+              <div><p class="dash-label">Ventas del día</p><h3 class="dash-value" id="dashTodaySales">$0.00</h3>
+                <span class="dash-sub" id="dashTodaySalesSub">Hoy</span></div>
             </div>
+            <div class="dash-metric tone-rose">
+              <span class="dash-icon"><i class="ph-fill ph-shopping-bag"></i></span>
+              <div><p class="dash-label">Pedidos del día</p><h3 class="dash-value" id="dashTodayOrders">0</h3>
+                <span class="dash-sub" id="dashTodayOrdersSub">Hoy</span></div>
+            </div>
+            <div class="dash-metric tone-blue">
+              <span class="dash-icon"><i class="ph-fill ph-receipt"></i></span>
+              <div><p class="dash-label">Ticket promedio del día</p><h3 class="dash-value" id="dashTodayTicket">$0.00</h3>
+                <span class="dash-sub">Importe promedio por pedido</span></div>
+            </div>
+            <div class="dash-metric tone-blue">
+              <span class="dash-icon"><i class="ph-fill ph-calendar-check"></i></span>
+              <div><p class="dash-label">Ventas de la semana</p><h3 class="dash-value" id="dashWeekSales">$0.00</h3>
+                <span class="dash-sub">Semana actual · lunes a hoy</span></div>
+            </div>
+            <div class="dash-metric tone-violet">
+              <span class="dash-icon"><i class="ph-fill ph-calendar"></i></span>
+              <div><p class="dash-label">Ventas del mes</p><h3 class="dash-value" id="dashMonthSales">$0.00</h3>
+                <span class="dash-sub">Mes actual</span></div>
+            </div>
+            <div class="dash-metric tone-amber">
+              <span class="dash-icon"><i class="ph-fill ph-star"></i></span>
+              <div><p class="dash-label">Producto más vendido</p><h3 class="dash-value" id="dashTopProduct">—</h3>
+                <span class="dash-sub" id="dashTopProductSub">Este mes</span></div>
+            </div>
+            <div class="dash-metric tone-teal">
+              <span class="dash-icon"><i class="ph-fill ph-user-plus"></i></span>
+              <div><p class="dash-label">Nuevas cuentas del mes</p><h3 class="dash-value" id="dashNewAccounts">0</h3>
+                <span class="dash-sub">Clientes que se registraron</span></div>
+            </div>
+            <div class="dash-metric tone-violet">
+              <span class="dash-icon"><i class="ph-fill ph-users-three"></i></span>
+              <div><p class="dash-label">Clientes recurrentes del mes</p><h3 class="dash-value" id="dashRepeatClients">0</h3>
+                <span class="dash-sub">Dos o más pedidos este mes</span></div>
+            </div>
+          </div>
+
+          <p class="dash-context"><i class="ph ph-clock"></i> Las cifras diarias usan la fecha de Panamá. El filtro se aplica a los gráficos y al ranking.</p>
+
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <div class="dash-heading">
+                <span class="dash-heading-icon"><i class="ph-fill ph-chart-bar"></i></span>
+                <div><h3>Ventas por fecha</h3><p class="dash-panel-sub" id="dashRangeSubtitle">Totales diarios del período seleccionado</p></div>
+              </div>
+            </div>
+            <div class="dash-dates">
+              <div class="dash-date-field"><label for="dashboardDateFrom">Desde</label>
+                <input id="dashboardDateFrom" type="date" onchange="renderDashboard()"></div>
+              <div class="dash-date-field"><label for="dashboardDateTo">Hasta</label>
+                <input id="dashboardDateTo" type="date" onchange="renderDashboard()"></div>
+            </div>
+            <div class="dash-quick">
+              <button type="button" onclick="setDashboardRange('week')">7 días</button>
+              <button type="button" onclick="setDashboardRange('month')">Este mes</button>
+              <button type="button" onclick="setDashboardRange('30days')">30 días</button>
+            </div>
+            <div class="dash-chart-wrap"><canvas id="salesByDateChart" aria-label="Ventas por día en las fechas seleccionadas" role="img"></canvas></div>
+          </div>
+
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <div class="dash-heading"><span class="dash-heading-icon"><i class="ph-fill ph-chart-donut"></i></span>
+                <div><h3>Ventas por categoría</h3><p class="dash-panel-sub">Distribución del período filtrado</p></div></div>
+            </div>
+            <div class="dash-category-row">
+              <div class="dash-donut"><canvas id="salesChart" aria-label="Distribución de ventas por categoría" role="img"></canvas></div>
+              <div class="dash-legend" id="dashCategoryLegend"></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <div class="dash-panel-head">
+              <div class="dash-heading"><span class="dash-heading-icon"><i class="ph-fill ph-users"></i></span>
+                <div><h3>Clientes que más compran</h3><p class="dash-panel-sub">Ordenados por importe acumulado del período filtrado</p></div></div>
+            </div>
+            <div class="dash-ranking" id="dashboardTopCustomers"></div>
+          </div>
         </section>
 
         <!-- ================= ADMIN: ORDERS ================= -->
@@ -2287,6 +2418,7 @@
                 orders = dbOrders.map(o => ({
                     id: o.id,
                     userId: o.user_id,
+                    createdAt: o.created_at,
                     guestDeviceId: o.guest_device_id,
                     customerName: customerNameForOrder(o),
                     date: new Date(o.created_at).toLocaleString(),
@@ -2342,7 +2474,7 @@
             const { data: dbUsers, error: errUsers } = await supabaseClient.from('users').select('*');
             if (dbUsers) {
                 appUsers = dbUsers.map(u => ({
-                    id: u.id, name: u.name, phone: u.phone, email: u.email, 
+                    id: u.id, name: u.name, phone: u.phone, email: u.email, createdAt: u.created_at,
                     password: u.password, role: u.role, banned: u.banned
                 }));
             }
@@ -2360,6 +2492,7 @@
                 orders = dbOrders.map(o => ({
                     id: o.id,
                     userId: o.user_id,
+                    createdAt: o.created_at,
                     guestDeviceId: o.guest_device_id,
                     customerName: customerNameForOrder(o),
                     date: new Date(o.created_at).toLocaleString(),
@@ -3978,31 +4111,141 @@
     }
 
     // --- DASHBOARD (ADMIN) ---
-    function renderDashboard() {
-        const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
-        const totalOrders = orders.length;
-        const topProduct = [...products].sort((a, b) => b.orders - a.orders)[0];
-        const combos = products.filter(p => p.category === 'Combos');
-        const topCombo = combos.length > 0 ? [...combos].sort((a, b) => b.orders - a.orders)[0] : null;
+    function renderDashboard(){
+  if (typeof Chart === 'undefined') return;
+  const $ = id => document.getElementById(id);
+  if (!$('dashTodaySales') || !$('salesByDateChart')) return;
+  const zone='America/Panama';
+  const f = new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'});
+  const dateKey=value=>{
+    const dt=value instanceof Date?value:new Date(value);
+    if(Number.isNaN(dt.getTime()))return '';
+    const parts={};
+    for(const x of f.formatToParts(dt))if(x.type==='year'||x.type==='month'||x.type==='day')parts[x.type]=x.value;
+    return parts.year+'-'+parts.month+'-'+parts.day;
+  };
+  const today=dateKey(new Date());
+  const fromUTC = key => new Date(key+'T12:00:00.000Z');
+  const shift = (key,days) => {
+    const dt=fromUTC(key);dt.setUTCDate(dt.getUTCDate()+days);return dt.toISOString().slice(0,10);
+  };
+  const monthStart=today.slice(0,7)+'-01';
+  const weekday=fromUTC(today).getUTCDay();
+  const weekStart=shift(today,-((weekday+6)%7));
+  const money=val=>'$'+(Number(val)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const safeText=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const validOrders=orders.filter(o=>o&&o.createdAt&&!Number.isNaN(new Date(o.createdAt).getTime()))
+    .map(o=>({...o,statDate:dateKey(o.createdAt)}));
+  const sum=items=>items.reduce((acc,o)=>acc+(Number(o.total)||0),0);
+  const todayOrders=validOrders.filter(o=>o.statDate===today);
+  const weekOrders=validOrders.filter(o=>o.statDate>=weekStart&&o.statDate<=today);
+  const monthOrders=validOrders.filter(o=>o.statDate>=monthStart&&o.statDate<=today);
+  const todayRevenue=sum(todayOrders);
+  $('dashTodaySales').textContent=money(todayRevenue);
+  $('dashTodayOrders').textContent=String(todayOrders.length);
+  $('dashTodayTicket').textContent=money(todayOrders.length?todayRevenue/todayOrders.length:0);
+  $('dashWeekSales').textContent=money(sum(weekOrders));
+  $('dashMonthSales').textContent=money(sum(monthOrders));
+  $('dashTodaySalesSub').textContent=today;
+  $('dashTodayOrdersSub').textContent=today;
+  const monthUnits=new Map();
+  for(const order of monthOrders)for(const item of(order.items||[])){
+    const productName=String(item.name||'Producto');
+    monthUnits.set(productName,(monthUnits.get(productName)||0)+(Number(item.qty)||0));
+  }
+  const top=[...monthUnits.entries()].sort((a,b)=>b[1]-a[1])[0];
+  $('dashTopProduct').textContent=top?.[0]||'Sin ventas';
+  $('dashTopProductSub').textContent=top?top[1]+' unidades este mes':'No hay productos vendidos este mes';
+  $('dashNewAccounts').textContent=String(appUsers.filter(u=>u?.role!=='admin'&&u?.createdAt&&dateKey(u.createdAt).startsWith(today.slice(0,7))).length);
+  const customerIdentity=o=>o.userId?'user:'+o.userId:o.guestDeviceId?'device:'+o.guestDeviceId:'guest-name:'+String(o.customerName||'Invitado').trim().toLocaleLowerCase();
+  const monthFrequency=new Map();
+  for(const o of monthOrders){const k=customerIdentity(o);monthFrequency.set(k,(monthFrequency.get(k)||0)+1);}
+  $('dashRepeatClients').textContent=String([...monthFrequency.values()].filter(n=>n>=2).length);
 
-        document.getElementById('dashTotalSales').innerText = `$${totalSales.toFixed(2)}`;
-        document.getElementById('dashTotalOrders').innerText = totalOrders;
-        document.getElementById('dashTopProduct').innerText = topProduct && topProduct.orders > 0 ? topProduct.name : 'N/A';
-        document.getElementById('dashTopCombo').innerText = topCombo && topCombo.orders > 0 ? topCombo.name : 'N/A';
-
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        if(salesChartInstance) salesChartInstance.destroy();
-
-        const chartLabels = categories.filter(c => c !== 'Todos');
-        const chartData = chartLabels.map(cat => products.filter(p => p.category === cat).reduce((sum, p) => sum + p.orders, 0));
-        const chartColors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'];
-
-        salesChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: chartColors, borderWidth: 2, borderColor: isDarkMode ? '#1f2937' : '#ffffff' }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#9ca3af' : '#6b7280', padding: 15, usePointStyle: true } } }, cutout: '65%' }
-        });
+  const from=$('dashboardDateFrom');
+  const to=$('dashboardDateTo');
+  if(!from.value)from.value=monthStart;
+  if(!to.value)to.value=today;
+  let start=from.value,end=to.value;
+  if(start>end){const tmp=start;start=end;end=tmp;from.value=start;to.value=end;}
+  if(shift(start,366)<end){start=shift(end,-366);from.value=start;}
+  const rangeOrders=validOrders.filter(o=>o.statDate>=start&&o.statDate<=end);
+  const pretty=key=>fromUTC(key).toLocaleDateString('es-PA',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+  $('dashRangeSubtitle').textContent=pretty(start)+' – '+pretty(end)+' · '+rangeOrders.length+' pedidos';
+  const dateLabels=[];
+  for(let k=start;k<=end;k=shift(k,1))dateLabels.push(k);
+  const daily=new Map(dateLabels.map(k=>[k,0]));
+  for(const o of rangeOrders)daily.set(o.statDate,(daily.get(o.statDate)||0)+(Number(o.total)||0));
+  const dateCanvas=$('salesByDateChart');
+  if(window.foodappDailySalesChart)window.foodappDailySalesChart.destroy();
+  window.foodappDailySalesChart=new Chart(dateCanvas.getContext('2d'),{
+    type:'bar',
+    data:{labels:dateLabels,datasets:[{label:'Ventas',data:dateLabels.map(k=>Number(daily.get(k).toFixed(2))),
+      backgroundColor:'#3b82f6',hoverBackgroundColor:'#2563eb',borderRadius:5,maxBarThickness:34}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:320},
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        title:items=>items.length?pretty(items[0].label):'',
+        label:context=>'Ventas: '+money(context.parsed.y)}}},
+      scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:7,color:isDarkMode?'#9ca3af':'#64748b',
+        callback:function(value){return fromUTC(this.getLabelForValue(value)).toLocaleDateString('es-PA',{day:'2-digit',month:'short',timeZone:'UTC'});}}},
+        y:{beginAtZero:true,ticks:{color:isDarkMode?'#9ca3af':'#64748b',callback:v=>'$'+v},
+          grid:{color:isDarkMode?'#374151':'#e2e8f0'}}}
     }
+  });
+
+  const totals=new Map();
+  const productByID=new Map(products.map(p=>[String(p.id),p]));
+  for(const order of rangeOrders){
+    for(const item of(order.items||[])){
+      const prod=productByID.get(String(item.id))||products.find(p=>p.name===item.name);
+      const category=String(prod?.category||'Otros');
+      totals.set(category,(totals.get(category)||0)+(Number(item.price)||0)*(Number(item.qty)||0));
+    }
+  }
+  const sections=[...totals.entries()].filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const colors=['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#14b8a6','#f97316'];
+  const entire=sections.reduce((acc,x)=>acc+x[1],0);
+  $('dashCategoryLegend').innerHTML=sections.length?sections.map(([name,amount],i)=>
+    `<div class="dash-legend-item"><span class="dash-dot" style="background:${colors[i%colors.length]}"></span><span>${safeText(name)}
+      <span class="dash-legend-caption"> · ${entire?Math.round(amount/entire*100):0}%</span></span><strong>${money(amount)}</strong></div>`).join('')
+    :'<p class="dash-empty">No hay productos vendidos entre estas fechas.</p>';
+  if(salesChartInstance)salesChartInstance.destroy();
+  salesChartInstance=new Chart($('salesChart').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:sections.length?sections.map(x=>x[0]):['Sin ventas'],
+      datasets:[{data:sections.length?sections.map(x=>Number(x[1].toFixed(2))):[1],
+        backgroundColor:sections.length?sections.map((_,i)=>colors[i%colors.length]):['#d1d5db'],
+        borderWidth:3,borderColor:isDarkMode?'#1f2937':'#fff',hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'67%',plugins:{
+      legend:{display:false},tooltip:{enabled:sections.length>0,callbacks:{label:ctx=>ctx.label+': '+money(ctx.parsed)}}}}
+  });
+  const ranking=new Map();
+  for(const o of rangeOrders){
+    const key=customerIdentity(o);
+    const fallback=appUsers.find(u=>String(u.id)===String(o.userId))?.name;
+    const name=String(o.customerName||fallback||'Invitado sin identificar').trim();
+    const record=ranking.get(key)||{name,orders:0,amount:0};
+    record.orders++;
+    record.amount+=Number(o.total)||0;
+    ranking.set(key,record);
+  }
+  const topClients=[...ranking.values()].sort((a,b)=>b.amount-a.amount||b.orders-a.orders).slice(0,5);
+  $('dashboardTopCustomers').innerHTML=topClients.length?topClients.map((c,i)=>
+    `<div class="dash-rank-row"><span class="dash-rank-badge">${i+1}</span><span>
+      <span class="dash-rank-name">${safeText(c.name)}</span>
+      <span class="dash-rank-caption">${c.orders} ${c.orders===1?'pedido':'pedidos'}</span></span>
+      <span class="dash-rank-spend">${money(c.amount)}</span></div>`).join('')
+    :'<p class="dash-empty">No hay clientes con pedidos en las fechas seleccionadas.</p>';
+}
+    function setDashboardRange(preset){
+  const dt = new Intl.DateTimeFormat('en-US',{timeZone:'America/Panama',year:'numeric',month:'2-digit',day:'2-digit'});
+  const ps={};for(const part of dt.formatToParts(new Date()))if(['year','month','day'].includes(part.type))ps[part.type]=part.value;
+  const today=ps.year+'-'+ps.month+'-'+ps.day;
+  const offset=days=>{const x=new Date(today+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+days);return x.toISOString().slice(0,10);};
+  document.getElementById('dashboardDateFrom').value=preset==='month'?today.slice(0,7)+'-01':offset(preset==='week'?-6:-29);
+  document.getElementById('dashboardDateTo').value=today;
+  renderDashboard();
+}
 
     // --- GESTIÓN DE USUARIOS A BASE DE DATOS (ADMIN) ---
     function renderAdminUsers() {
@@ -4206,7 +4449,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-6" defer></script>
-<script src="./push-notifications.js?v=20261009-6" defer></script>
+<script src="./pwa.js?v=20261009-7" defer></script>
+<script src="./push-notifications.js?v=20261009-7" defer></script>
 </body>
 </html>
