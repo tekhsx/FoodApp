@@ -3244,6 +3244,120 @@
         return date.toISOString().split('T')[0];
     }
 
+
+    const PRODUCT_SIZE_NAMES=['Pequeña','Clásica','Mediana','Grande','Extra grande'];
+    let choosingProductSizeId=null;
+    function getProductSizeOptions(product){
+        const sizes=Array.isArray(product?.sizeOptions)?product.sizeOptions:[];
+        return sizes.filter(x=>x && PRODUCT_SIZE_NAMES.includes(String(x.name)) && Number.isFinite(Number(x.price)) && Number(x.price)>0)
+            .map(x=>({name:String(x.name),price:Number(x.price)}));
+    }
+    function toggleProductSizeFields(){
+        const enabled=document.getElementById('enableProductSizes').checked;
+        document.getElementById('productSizeFields').hidden=!enabled;
+        const price=document.getElementById('addPrice');
+        price.style.display=enabled?'none':'';
+        price.disabled=enabled;
+    }
+    function populateProductSizeFields(product=null){
+        const saved=getProductSizeOptions(product);
+        document.getElementById('enableProductSizes').checked=saved.length>0;
+        document.getElementById('productSizePriceRows').innerHTML=PRODUCT_SIZE_NAMES.map((name,index)=>{
+            const row=saved.find(x=>x.name===name);
+            return '<div class="product-size-edit-row"><label><input type="checkbox" data-size-check="'+index+'" '+
+                (row?'checked':'')+' onchange="toggleSizePriceInput('+index+')">'+escapeCustomerHtml(name)+'</label>'+
+                '<input type="number" inputmode="decimal" min="0.01" step="0.01" data-size-price="'+index+
+                '" placeholder="$ Precio" '+(row?'value="'+row.price.toFixed(2)+'"':'disabled')+'></div>';
+        }).join('');
+        toggleProductSizeFields();
+    }
+    function toggleSizePriceInput(index){
+        const check=document.querySelector('[data-size-check="'+index+'"]');
+        const price=document.querySelector('[data-size-price="'+index+'"]');
+        price.disabled=!check.checked;
+        if(check.checked && !price.value)price.focus();
+    }
+    function configuredProductSizes(){
+        if(!document.getElementById('enableProductSizes').checked)return [];
+        const selected=[];
+        for(const [index,name] of PRODUCT_SIZE_NAMES.entries()){
+            if(!document.querySelector('[data-size-check="'+index+'"]').checked)continue;
+            const field=document.querySelector('[data-size-price="'+index+'"]');
+            const price=Number(field.value);
+            if(!field.value||!Number.isFinite(price)||price<=0||price>999999){
+                throw new Error('Coloca un precio válido para '+name+'.');
+            }
+            selected.push({name,price:Math.round(price*100)/100});
+        }
+        if(!selected.length)throw new Error('Selecciona por lo menos un tamaño.');
+        return selected;
+    }
+    function sizePriceForProduct(raw,option){
+        // Las promociones activas aplican su porcentaje de descuento a cada presentación.
+        const effective=getEffectiveProductData(raw);
+        const original=Number(raw.oldPrice)||0;
+        const factor=effective.promo && original>0 ? Math.max(0,Number(effective.price))/original : 1;
+        return Math.round(Number(option.price)*factor*100)/100;
+    }
+    function openProductSizeDialog(id){
+        const product=products.find(x=>x.id===id);
+        if(!product || !product.active)return;
+        const sizes=getProductSizeOptions(product);
+        if(!sizes.length)return;
+        choosingProductSizeId=id;
+        document.getElementById('productSizeDialogTitle').textContent=product.name+' · Tamaños';
+        document.getElementById('productSizeQuantityList').innerHTML=sizes.map((item,index)=>{
+            const price=sizePriceForProduct(product,item);
+            return '<div class="product-size-order-row"><div><strong>'+escapeCustomerHtml(item.name)+'</strong>'+
+                '<small>$'+price.toFixed(2)+'</small></div><div class="product-size-quantity">'+
+                '<button type="button" onclick="adjustProductSizeQty('+index+',-1)">−</button>'+
+                '<input type="number" min="0" max="99" step="1" inputmode="numeric" data-ordered-size="'+index+
+                '" data-size-name="'+escapeCustomerHtml(item.name)+'" value="0" oninput="updateProductSizeTotal()" aria-label="Cantidad '+escapeCustomerHtml(item.name)+'">'+
+                '<button type="button" onclick="adjustProductSizeQty('+index+',1)">+</button></div></div>';
+        }).join('');
+        document.getElementById('productSizeDialog').hidden=false;
+        updateProductSizeTotal();
+    }
+    function closeProductSizeDialog(){
+        document.getElementById('productSizeDialog').hidden=true;
+        choosingProductSizeId=null;
+    }
+    function adjustProductSizeQty(index,delta){
+        const input=document.querySelector('[data-ordered-size="'+index+'"]');
+        if(!input)return;
+        input.value=Math.max(0,Math.min(99,(parseInt(input.value,10)||0)+delta));
+        updateProductSizeTotal();
+    }
+    function readSelectedProductSizes(){
+        const product=products.find(p=>p.id===choosingProductSizeId);
+        if(!product)return [];
+        const sizes=getProductSizeOptions(product);
+        return [...document.querySelectorAll('#productSizeQuantityList [data-ordered-size]')]
+            .map(input=>({size:sizes[Number(input.dataset.orderedSize)],qty:Math.max(0,Math.min(99,parseInt(input.value,10)||0))}))
+            .filter(v=>v.qty>0&&v.size);
+    }
+    function updateProductSizeTotal(){
+        const product=products.find(p=>p.id===choosingProductSizeId);
+        const total=readSelectedProductSizes().reduce((sum,v)=>sum+v.qty*sizePriceForProduct(product,v.size),0);
+        document.getElementById('productSizeSelectionTotal').textContent='$'+total.toFixed(2);
+    }
+    function addSelectedProductSizes(){
+        const raw=products.find(p=>p.id===choosingProductSizeId);
+        if(!raw || !raw.active)return closeProductSizeDialog();
+        const selected=readSelectedProductSizes();
+        if(!selected.length)return showToast('Elige al menos una cantidad para agregar.');
+        for(const {size,qty} of selected){
+            const existing=cart.find(item=>item.id===raw.id&&item.sizeLabel===size.name);
+            const price=sizePriceForProduct(raw,size);
+            if(existing){existing.qty+=qty;existing.price=price;}
+            else cart.push({...getEffectiveProductData(raw),sizeLabel:size.name,price,qty});
+        }
+        saveState();
+        updateCartBadge();
+        closeProductSizeDialog();
+        showToast('Tamaños agregados al carrito');
+    }
+
     function getEffectiveProductData(p) {
         const today = getLocalYYYYMMDD(); 
         let isPromo = p.promo;
