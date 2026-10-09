@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.8">
+    <meta name="foodapp-version" content="2026.10.09.9">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -721,6 +721,15 @@
         .foodapp-date-calendar .flatpickr-day.flatpickr-disabled { color:#cbd5e1; }
         @media(max-width:355px) {.flatpickr-calendar.foodapp-date-calendar { width:288px; }}
 
+
+        .dashboard-v2 .dash-cache-toolbar { display:flex; align-items:center; justify-content:space-between;
+            gap:12px; margin:2px 16px 5px; }
+        .dashboard-v2 .dash-cache-toolbar .dash-context { margin:0; flex:1; }
+        .dashboard-v2 .dash-refresh-btn { flex:0 0 auto; display:inline-flex; gap:5px; align-items:center;
+            color:var(--text-main); background:var(--surface-color); border:1px solid var(--border);
+            border-radius:999px; padding:9px 11px; cursor:pointer; font-size:.76rem; font-weight:750; }
+        .dashboard-v2 .dash-cache-status { color:var(--text-muted); font-size:.7rem;
+            margin:0 16px 14px; line-height:1.4; }
         /* Admin Sub-view Headers */
         .back-header {
             display: flex;
@@ -2139,7 +2148,13 @@
             </div>
           </div>
 
-          <p class="dash-context"><i class="ph ph-clock"></i> Las cifras diarias usan la fecha de Panamá. El filtro se aplica a los gráficos y al ranking.</p>
+          <div class="dash-cache-toolbar">
+             <p class="dash-context"><i class="ph ph-clock"></i> Las cifras diarias usan Panamá; gráficos y ranking usan el rango elegido.</p>
+             <button type="button" class="dash-refresh-btn" onclick="loadDashboardOnDemand(true)" title="Descargar nuevamente las ventas">
+                <i class="ph ph-arrows-clockwise"></i> Actualizar
+             </button>
+           </div>
+           <p id="dashCacheStatus" class="dash-cache-status" role="status" aria-live="polite">El Resumen se consulta cuando abres esta vista.</p>
 
           <div class="dash-panel">
             <div class="dash-panel-head">
@@ -2423,6 +2438,167 @@
     let salesChartInstance = null; 
     let editingProductId = null; 
 
+
+    // Resumen administrativo: historial bajo demanda, caché por administrador durante 10 minutos.
+    // Los pedidos operativos siguen con sus actualizaciones en tiempo real, sin descargar retirados.
+    const DASHBOARD_CACHE_MS = 10 * 60 * 1000;
+    const DASHBOARD_PAGE_SIZE = 400;
+    let dashboardSummaryCache = null;
+    let dashboardLoadingPromise = null;
+    let operationalOrdersSynced = false;
+    const dashboardIsOpen = () => currentUser?.role === 'admin' &&
+        !!document.getElementById('view-admin-stats')?.classList.contains('active');
+    const dashboardCacheKey = () => 'foodapp_dashboard_stats_v1_' + String(currentUser?.id || 'none');
+    function panamaTodayKey(){
+        const parts={};new Intl.DateTimeFormat('en-US',{timeZone:'America/Panama',year:'numeric',month:'2-digit',day:'2-digit'})
+            .formatToParts(new Date()).forEach(p=>{if(['year','month','day'].includes(p.type))parts[p.type]=p.value;});
+        return parts.year+'-'+parts.month+'-'+parts.day;
+    }
+    function dashboardShiftDay(key,days){
+        const d=new Date(key+'T12:00:00Z');
+        d.setUTCDate(d.getUTCDate()+days);
+        return d.toISOString().slice(0,10);
+    }
+    function dashboardShowStatus(message){
+        if(!dashboardIsOpen())return;
+        const el=document.getElementById('dashCacheStatus');
+        if(el)el.textContent=message;
+    }
+    function dashboardRestoreCache(){
+        const owner=String(currentUser?.id||'');
+        if(currentUser?.role!=='admin'||!owner)return null;
+        if(dashboardSummaryCache?.owner===owner)return dashboardSummaryCache;
+        dashboardSummaryCache=null;
+        try{
+            const raw=localStorage.getItem(dashboardCacheKey());
+            if(raw){
+                const value=JSON.parse(raw);
+                if(value.owner===owner && value.today===panamaTodayKey() &&
+                    Array.isArray(value.rows) && typeof value.from==='string' &&
+                    typeof value.to==='string' && Number(value.expiresAt)>Date.now()){
+                    dashboardSummaryCache=value;
+                }else localStorage.removeItem(dashboardCacheKey());
+            }
+        }catch(error){console.warn('Caché de Resumen no disponible',error);}
+        return dashboardSummaryCache;
+    }
+    function dashboardSaveCache(cache){
+        if(!cache||currentUser?.role!=='admin'||String(currentUser.id)!==cache.owner)return;
+        dashboardSummaryCache=cache;
+        try{
+            const text=JSON.stringify(cache);
+            if(text.length<=2000000)localStorage.setItem(dashboardCacheKey(),text);
+            else localStorage.removeItem(dashboardCacheKey());
+        }catch(error){console.warn('El navegador no pudo guardar el resumen en caché',error);}
+    }
+    function invalidateDashboardCache(){
+        dashboardSummaryCache=null;
+        if(currentUser?.role!=='admin')return;
+        try{localStorage.removeItem(dashboardCacheKey());}catch{}
+        if(dashboardIsOpen())void loadDashboardOnDemand(true);
+    }
+    function clearDashboardCacheOnLogout(){
+        if(currentUser?.role==='admin')try{localStorage.removeItem(dashboardCacheKey());}catch{}
+        dashboardSummaryCache=null;
+        // La consulta que pudiera estar terminando comprueba la identidad antes de guardar.
+    }
+    async function dashboardFetchPeriod(from,to){
+        // Panamá: UTC-05:00 fijo, sin horario de verano; to es inclusivo en la interfaz.
+        const dateUTC=key=>key+'T05:00:00.000Z';
+        const endExclusive=dashboardShiftDay(to,1);
+        const result=[];
+        for(let page=0;page<300;page++){
+            const first=page*DASHBOARD_PAGE_SIZE;
+            const {data,error}=await supabaseClient.from('orders')
+                .select('id,total,status,created_at,user_id,guest_device_id,customer_name,order_items(product_id,quantity,unit_price,product_name)')
+                .gte('created_at',dateUTC(from))
+                .lt('created_at',dateUTC(endExclusive))
+                .order('created_at',{ascending:true})
+                .range(first,first+DASHBOARD_PAGE_SIZE-1);
+            if(error)throw error;
+            for(const o of(data||[])){
+                result.push({
+                    id:o.id,total:Number(o.total)||0,status:o.status,
+                    createdAt:o.created_at,userId:o.user_id,guestDeviceId:o.guest_device_id,
+                    customerName:o.customer_name,
+                    items:(o.order_items||[]).map(i=>({
+                        id:i.product_id,qty:i.quantity,name:i.product_name,price:Number(i.unit_price)||0
+                    }))
+                });
+            }
+            if(!data||data.length<DASHBOARD_PAGE_SIZE)break;
+            if(page===299)throw new Error('Demasiados pedidos para descargar en una sola consulta de resumen.');
+        }
+        return result;
+    }
+    function dashboardRequestedCoverage(){
+        const today=panamaTodayKey();
+        const from=document.getElementById('dashboardDateFrom');
+        const to=document.getElementById('dashboardDateTo');
+        const monthStart=today.slice(0,7)+'-01';
+        const weekday=new Date(today+'T12:00:00Z').getUTCDay();
+        const weekStart=dashboardShiftDay(today,-((weekday+6)%7));
+        if(from&&!from.value)from.value=monthStart;
+        if(to&&!to.value)to.value=today;
+        // Abarca las métricas del mes y semana, además del filtro seleccionado.
+        let start=(from?.value||monthStart);
+        let end=(to?.value||today);
+        if(start>end)[start,end]=[end,start];
+        if(end>today)end=today;
+        if(dashboardShiftDay(start,366)<end)start=dashboardShiftDay(end,-366);
+        if(from)from.value=start;
+        if(to)to.value=end;
+        return {from:[start,monthStart,weekStart].sort()[0],to:today};
+    }
+    async function loadDashboardOnDemand(force=false){
+        if(!dashboardIsOpen())return;
+        if(dashboardLoadingPromise){
+            await dashboardLoadingPromise;
+            if(dashboardIsOpen())return loadDashboardOnDemand(force);
+            return;
+        }
+        const owner=String(currentUser.id);
+        const cached=dashboardRestoreCache();
+        if(cached && !force){
+            renderDashboard();
+            dashboardShowStatus('Datos guardados en caché · '+new Date(cached.fetchedAt).toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'}));
+        }else dashboardShowStatus('Consultando ventas en Supabase…');
+        dashboardLoadingPromise=(async()=>{
+            try{
+                const required=dashboardRequestedCoverage();
+                let active=(!force&&cached&&cached.today===panamaTodayKey()&&cached.expiresAt>Date.now())
+                    ?{...cached,rows:[...cached.rows]}:null;
+                if(!active){
+                    const rows=await dashboardFetchPeriod(required.from,required.to);
+                    active={owner,today:panamaTodayKey(),from:required.from,to:required.to,
+                        rows,expiresAt:Date.now()+DASHBOARD_CACHE_MS,fetchedAt:Date.now()};
+                }else{
+                    const missing=[];
+                    if(required.from<active.from)missing.push([required.from,dashboardShiftDay(active.from,-1)]);
+                    if(required.to>active.to)missing.push([dashboardShiftDay(active.to,1),required.to]);
+                    for(const [first,last] of missing)active.rows.push(...await dashboardFetchPeriod(first,last));
+                    if(missing.length){
+                        active.from=required.from<active.from?required.from:active.from;
+                        active.to=required.to>active.to?required.to:active.to;
+                        active.fetchedAt=Date.now();
+                    }
+                }
+                // Nadie puede conservar en pantalla ni caché datos de otro administrador tras salir.
+                if(currentUser?.role!=='admin'||String(currentUser.id)!==owner)return;
+                dashboardSaveCache(active);
+                if(dashboardIsOpen()){
+                    renderDashboard();
+                    dashboardShowStatus('Actualizado '+new Date(active.fetchedAt).toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'})+' · caché 10 min');
+                }
+            }catch(error){
+                console.error('Error al consultar Resumen',error);
+                dashboardShowStatus('No se pudo actualizar el resumen. '+(cached?'Mostrando últimos datos guardados.':'Reintenta con Actualizar.'));
+                if(cached && dashboardIsOpen())renderDashboard();
+            }
+        })();
+        try{await dashboardLoadingPromise;}finally{dashboardLoadingPromise=null;}
+    }
+
     // --- NUEVO: COMPROBACIÓN LIGERA DE PEDIDOS (POLLING) ---
     async function pollOrders() {
         if (!currentUser) return; // Si no hay sesión iniciada, no verificar
@@ -2431,7 +2607,8 @@
             // 1. Comprobación Ligera: Solo descargar IDs y Estados (Muy rápido y poco peso)
             const { data: checkData, error: checkErr } = await supabaseClient
                 .from('orders')
-                .select('id, status');
+                .select('id, status')
+                .neq('status', 'Retirado');
 
             if (checkErr) throw checkErr;
             if (!checkData) return;
@@ -2464,6 +2641,7 @@
                     id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
                     order_items ( product_id, quantity, unit_price, product_name )
                 `)
+                .neq('status', 'Retirado')
                 .order('created_at', { ascending: false });
 
             if (errOrders) throw errOrders;
@@ -2503,7 +2681,7 @@
                 updateOrdersBadge();
                 if (document.getElementById('view-admin-orders').classList.contains('active')) renderOrdersAdmin();
                 if (document.getElementById('view-my-orders').classList.contains('active')) renderUserOrders();
-                if (document.getElementById('view-admin-stats').classList.contains('active')) renderDashboard();
+                invalidateDashboardCache();
             }
 
         } catch (error) {
@@ -2536,13 +2714,16 @@
                 }));
             }
 
-            // 3. Obtener Pedidos y sus items correspondientes
+            const previousOperations = operationalOrdersSynced
+                ? orders.map(o=>String(o.id)+':'+String(o.status)).join('|'):null;
+            // 3. Obtener solamente pedidos operativos; los retirados se consultan bajo demanda en Resumen
             const { data: dbOrders, error: errOrders } = await supabaseClient
                 .from('orders')
                 .select(`
                     id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
                     order_items ( product_id, quantity, unit_price, product_name )
                 `)
+                .neq('status', 'Retirado')
                 .order('created_at', { ascending: false });
 
             if (dbOrders) {
@@ -2573,7 +2754,11 @@
             if (document.getElementById('view-admin-tv').classList.contains('active')) renderTvView();
             if (document.getElementById('view-menu').classList.contains('active')) renderFullMenu();
             if (document.getElementById('view-admin-orders').classList.contains('active')) renderOrdersAdmin();
-            if (document.getElementById('view-admin-stats').classList.contains('active')) renderDashboard();
+            if (dbOrders) {
+                const updatedOperations=orders.map(o=>String(o.id)+':'+String(o.status)).join('|');
+                if(previousOperations!==null && previousOperations!==updatedOperations)invalidateDashboardCache();
+                operationalOrdersSynced=true;
+            }
             if (document.getElementById('view-my-orders').classList.contains('active')) renderUserOrders();
             // Una sincronización debe actualizar también las tarjetas del administrador.
             if (document.getElementById('view-admin-products').classList.contains('active')) renderAdminProducts();
@@ -2908,6 +3093,8 @@
     }
 
     function logout() {
+        clearDashboardCacheOnLogout();
+        operationalOrdersSynced=false;
         void window.FoodAppPush?.disconnect();
         currentUser = null;
         localStorage.removeItem('foodapp_user');
@@ -2946,7 +3133,7 @@
         if(viewName === 'home') renderHomeViews();
         if(viewName === 'my-orders') renderUserOrders();
         
-        if(viewName === 'admin-stats') renderDashboard();
+        if(viewName === 'admin-stats') void loadDashboardOnDemand();
         if(viewName === 'admin-orders') renderOrdersAdmin();
         if(viewName === 'admin-users') renderAdminUsers();
         if(viewName === 'admin-products') renderAdminProducts(); 
@@ -4191,7 +4378,7 @@
   const weekStart=shift(today,-((weekday+6)%7));
   const money=val=>'$'+(Number(val)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const safeText=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  const validOrders=orders.filter(o=>o&&o.createdAt&&!Number.isNaN(new Date(o.createdAt).getTime()))
+  const validOrders=(dashboardSummaryCache?.rows||[]).filter(o=>o&&o.createdAt&&!Number.isNaN(new Date(o.createdAt).getTime()))
     .map(o=>({...o,statDate:dateKey(o.createdAt)}));
   const sum=items=>items.reduce((acc,o)=>acc+(Number(o.total)||0),0);
   const todayOrders=validOrders.filter(o=>o.statDate===today);
@@ -4335,7 +4522,7 @@
           if(dates.length===2){
             from.value=picker.formatDate(dates[0],'Y-m-d');
             to.value=picker.formatDate(dates[1],'Y-m-d');
-            renderDashboard();
+            void loadDashboardOnDemand();
           }
         },
         onClose:(dates,__,picker)=>{
@@ -4343,7 +4530,7 @@
             const chosen=picker.formatDate(dates[0],'Y-m-d');
             from.value=chosen;to.value=chosen;
             picker.setDate([chosen,chosen],false,'Y-m-d');
-            renderDashboard();
+            void loadDashboardOnDemand();
           }
         }
       });
@@ -4354,7 +4541,7 @@
       if(!from||!to)return;
       document.getElementById('dashboardDateFrom').value=from.value;
       document.getElementById('dashboardDateTo').value=to.value;
-      renderDashboard();
+      void loadDashboardOnDemand();
     }
     function setDashboardRange(preset){
   const dt = new Intl.DateTimeFormat('en-US',{timeZone:'America/Panama',year:'numeric',month:'2-digit',day:'2-digit'});
@@ -4369,7 +4556,7 @@
     const a=document.getElementById('dashboardFallbackFrom'),b=document.getElementById('dashboardFallbackTo');
     if(a)a.value=start;if(b)b.value=today;
   }
-  renderDashboard();
+  void loadDashboardOnDemand();
 }
 
     // --- GESTIÓN DE USUARIOS A BASE DE DATOS (ADMIN) ---
@@ -4574,7 +4761,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-8" defer></script>
-<script src="./push-notifications.js?v=20261009-8" defer></script>
+<script src="./pwa.js?v=20261009-9" defer></script>
+<script src="./push-notifications.js?v=20261009-9" defer></script>
 </body>
 </html>
