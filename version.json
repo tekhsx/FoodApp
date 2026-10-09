@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.09.8",
-  "message": "Resumen: tickets en cantidad y calendario visual para seleccionar el rango de fechas."
+  "version": "2026.10.09.9",
+  "message": "Resumen eficiente: carga bajo demanda, caché local de 10 minutos y consultas por rango."
 }
