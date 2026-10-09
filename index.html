@@ -1979,6 +1979,22 @@
         .app-confirm-ok.is-danger{background:#dc2626;border-color:#dc2626}
         .app-confirm-actions button:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
         @media(max-width:380px){.app-confirm-actions{flex-direction:column-reverse}}
+
+.promo-size-selector{display:flex;flex-direction:column;gap:8px}
+.promo-size-selector>strong{font-size:.88rem;color:var(--text-main)}
+.promo-size-selector>p{font-size:.75rem;color:var(--text-muted);margin:0 0 5px;line-height:1.45}
+.promo-size-row{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px;
+    border:1px solid var(--border);border-radius:12px;background:var(--surface-color)}
+.promo-size-row label{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer}
+.promo-size-row label input{width:19px;height:19px;flex:0 0 19px;accent-color:var(--primary)}
+.promo-size-row-label{display:flex;flex-direction:column;gap:3px}
+.promo-size-row-label strong{font-size:.87rem}
+.promo-size-row-label small{font-size:.72rem;color:var(--text-muted)}
+.promo-size-row>input{max-width:43%;width:110px;padding:10px 8px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg-color);color:var(--text-main);font:inherit;font-size:.86rem}
+.promo-size-row>input:disabled{opacity:.5}
+.promo-size-row:has(input:checked){border-color:var(--primary);background:rgba(239,68,68,.05)}
+
     </style>
 </head>
 <body>
@@ -4432,11 +4448,12 @@
                     <div>
                         <strong style="color:var(--text-main); font-size:1rem;">${rawP.promo ? 'Ajustar promoción' : 'Activar promoción'}</strong>
                         <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
-                            ${rawP.promo ? 'Modifica los precios o las fechas y guarda los cambios.' : 'Solo coloca el precio promocional. Las fechas son opcionales.'}
+                            ${getProductSizeOptions(rawP).length ? "Selecciona los tamaños con descuento; las fechas son opcionales." : (rawP.promo ? "Modifica los precios o las fechas y guarda los cambios." : "Coloca el precio promocional. Las fechas son opcionales.")}
                         </div>
                     </div>
 
                     ${!rawP.active ? '<div style="color:#d97706; font-size:0.8rem;">Al activar la promoción, también se mostrará el producto en el menú.</div>' : ''}
+                    ${getProductSizeOptions(rawP).length ? promoSizeEditor(rawP) : `
                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                         <div style="flex:1; min-width:110px;">
                             <label style="font-size:0.75rem; color:var(--text-muted)">Precio normal ($)</label>
@@ -4447,6 +4464,8 @@
                             <input type="number" id="manage-price-${rawP.id}" class="admin-input" value="${rawP.promo ? rawP.price : ''}" step="0.01" min="0" placeholder="Ej. 4.99">
                         </div>
                     </div>
+
+                    `}
 
                     <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
                         <div style="flex:1; min-width:130px;">
@@ -4488,6 +4507,32 @@
                 promoInput.select();
             }, 50);
         }
+    }
+
+
+    function togglePromoSizePrice(id,index){
+        const check=document.getElementById('promo-size-check-'+id+'-'+index);
+        const input=document.getElementById('promo-size-price-'+id+'-'+index);
+        if(!check||!input)return;
+        input.disabled=!check.checked;
+        if(check.checked&&!input.value)input.focus();
+    }
+    function promoSizeEditor(product){
+        const sizes=getProductSizeOptions(product);
+        return '<div class="promo-size-selector">'+
+            '<strong>¿A qué tamaños aplicar la promoción?</strong>'+
+            '<p>Selecciona uno o varios tamaños y coloca el precio con descuento de cada uno.</p>'+
+            sizes.map((size,index)=>{
+                const selected=product.promo&&size.promoPrice!==null;
+                return '<div class="promo-size-row"><label for="promo-size-check-'+product.id+'-'+index+'">'+
+                    '<input type="checkbox" id="promo-size-check-'+product.id+'-'+index+'" '+
+                    'onchange="togglePromoSizePrice('+product.id+','+index+')" '+(selected?'checked':'')+'>'+
+                    '<span class="promo-size-row-label"><strong>'+escapeCustomerHtml(size.name)+'</strong>'+
+                    '<small>Normal: $'+size.price.toFixed(2)+'</small></span></label>'+
+                    '<input type="number" id="promo-size-price-'+product.id+'-'+index+'" min="0" step="0.01" inputmode="decimal" '+
+                    'aria-label="Precio promocional de '+escapeCustomerHtml(size.name)+'" placeholder="Promo $" '+
+                    (selected?'value="'+size.promoPrice.toFixed(2)+'"':'disabled')+'></div>';
+            }).join('')+'</div>';
     }
 
     function showPromoError(id, message) {
@@ -4545,11 +4590,15 @@
 
         const normalPrice = p.oldPrice !== null ? Number(p.oldPrice) : Number(p.price);
         try {
+
+            const sizes=getProductSizeOptions(p);
+            const update=sizes.length
+                ? {price:Math.min(...sizes.map(x=>x.price)),old_price:null,promo:false,
+                   size_options:sizes.map(x=>({name:x.name,price:x.price})),
+                   promo_start:null,promo_end:null}
+                : {price:normalPrice,old_price:null,promo:false,promo_start:null,promo_end:null};
             const { data, error } = await supabaseClient.from('products')
-                .update({
-                    price: normalPrice, old_price: null, promo: false,
-                    promo_start: null, promo_end: null
-                }).eq('id', id).select();
+                .update(update).eq('id', id).select();
             if (error) throw error;
             if (!data || data.length !== 1 || data[0].promo !== false) {
                 throw new Error('Supabase no confirmó que se haya desactivado la promoción.');
