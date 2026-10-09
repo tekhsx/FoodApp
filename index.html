@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.4">
+    <meta name="foodapp-version" content="2026.10.09.5">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -2275,7 +2275,7 @@
             const { data: dbOrders, error: errOrders } = await supabaseClient
                 .from('orders')
                 .select(`
-                    id, total, status, process_start_time, created_at, user_id,
+                    id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
                     order_items ( product_id, quantity, unit_price, product_name )
                 `)
                 .order('created_at', { ascending: false });
@@ -2289,6 +2289,8 @@
                 orders = dbOrders.map(o => ({
                     id: o.id,
                     userId: o.user_id,
+                    guestDeviceId: o.guest_device_id,
+                    customerName: customerNameForOrder(o),
                     date: new Date(o.created_at).toLocaleString(),
                     total: parseFloat(o.total),
                     status: o.status,
@@ -2349,7 +2351,7 @@
             const { data: dbOrders, error: errOrders } = await supabaseClient
                 .from('orders')
                 .select(`
-                    id, total, status, process_start_time, created_at, user_id,
+                    id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
                     order_items ( product_id, quantity, unit_price, product_name )
                 `)
                 .order('created_at', { ascending: false });
@@ -2358,6 +2360,8 @@
                 orders = dbOrders.map(o => ({
                     id: o.id,
                     userId: o.user_id,
+                    guestDeviceId: o.guest_device_id,
+                    customerName: customerNameForOrder(o),
                     date: new Date(o.created_at).toLocaleString(),
                     total: parseFloat(o.total),
                     status: o.status,
@@ -3534,6 +3538,11 @@
 
     async function checkout() {
         if(cart.length === 0) return;
+        if (!currentUser) return showToast('Inicia sesión o continúa como invitado.');
+        if (!currentUser.id && !hasFullGuestName(currentUser.name)) {
+            loginAsGuest();
+            return;
+        }
         
         const btn = document.querySelector('#cartSummary .checkout-btn');
         btn.disabled = true;
@@ -3546,6 +3555,7 @@
             // 1. Crear Orden en DB
             const newOrder = {
                 user_id: currentUser && currentUser.id ? currentUser.id : null,
+                customer_name: normalizeCustomerName(currentUser.name),
                 total: orderTotal,
                 status: 'Pendiente'
             };
@@ -4083,7 +4093,8 @@
                     <div class="order-header">
                         <div>
                             <strong style="color:var(--text-main)">Pedido #${o.id.toString().slice(-4)}</strong>
-                            <div style="font-size:0.7rem; color:var(--text-muted)">${o.date}</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted">${o.date}</div>
+                            <div class="order-customer"><i class="ph-fill ph-user-circle" aria-hidden="true"></i> ${escapeCustomerHtml(o.customerName)}</div>
                             ${timerHtml}
                         </div>
                         <div class="order-status ${statusClass}">${o.status}</div>
@@ -4132,7 +4143,9 @@
         const list = document.getElementById('userOrdersList');
         // Solo mostraremos pedidos del usuario actual o, si es invitado localmente y acaba de pedir, los veremos. 
         // Idealmente en una BD real el invitado no tiene id. Buscamos pedidos de currentUser.id si lo hay
-        const userOrders = orders.filter(o => o.userId === (currentUser?.id || null) && o.status !== 'Retirado');
+        const guestDeviceId = !currentUser?.id ? window.FoodAppPush?.guestDeviceId() : null;
+        const userOrders = orders.filter(o => o.status !== 'Retirado' &&
+            (currentUser?.id ? o.userId === currentUser.id : !!guestDeviceId && o.guestDeviceId === guestDeviceId));
 
         if(userOrders.length === 0) {
             return list.innerHTML = `<div class="empty-state"><i class="ph ph-receipt"></i><h3>No tienes pedidos activos</h3><p>Aún no has realizado compras o ya fueron retiradas.</p></div>`;
@@ -4193,7 +4206,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-4" defer></script>
-<script src="./push-notifications.js?v=20261009-4" defer></script>
+<script src="./pwa.js?v=20261009-5" defer></script>
+<script src="./push-notifications.js?v=20261009-5" defer></script>
 </body>
 </html>
