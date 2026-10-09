@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
-    <meta name="foodapp-version" content="2026.10.09.7">
+    <meta name="foodapp-version" content="2026.10.09.8">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -18,6 +18,10 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Chart.js para la gráfica del Dashboard -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Calendario de rango: Flatpickr 4.6.13 en español -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -673,6 +677,49 @@
             .dashboard-v2 .dash-panel { margin:0 10px 12px; padding:14px 11px; }
             .dashboard-v2 .dash-metric .dash-value { font-size:1.03rem; }
         }
+
+
+        /* Calendario del Resumen: navegación mensual y selección de rango visible. */
+        .dashboard-v2 .dash-calendar-picker { margin:0 0 12px; }
+        .dashboard-v2 .dash-calendar-picker>label { display:block; font-size:.72rem; font-weight:700;
+            color:var(--text-muted); margin-bottom:5px; }
+        .dashboard-v2 .dash-calendar-control { display:flex; align-items:center; gap:9px; width:100%;
+            border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+            color:#2696d7; background:var(--bg-color); box-sizing:border-box; }
+        .dashboard-v2 .dash-calendar-control>i { font-size:19px; flex:0 0 auto; }
+        .dashboard-v2 .dash-calendar-control>input,
+        .dashboard-v2 .dash-calendar-control>input.flatpickr-input { border:0; outline:0; min-width:0; flex:1;
+            background:transparent; font:inherit; font-size:.85rem; font-weight:700;
+            color:var(--text-main); cursor:pointer; padding:0; }
+        .dashboard-v2 .dash-calendar-control:focus-within { border-color:#3b9bd6; box-shadow:0 0 0 2px rgba(52,155,214,.12); }
+        .dashboard-v2 #dashboardDateFallback[hidden] { display:none !important; }
+        .flatpickr-calendar.foodapp-date-calendar { z-index:99999; border-radius:17px;
+            border:1px solid #e5e7eb; box-shadow:0 15px 42px rgba(15,23,42,.17);
+            padding:12px 8px 8px; width:310px; background:#fff; }
+        .foodapp-date-calendar .flatpickr-months { padding:2px 0 12px; }
+        .foodapp-date-calendar .flatpickr-months .flatpickr-month { height:38px; }
+        .foodapp-date-calendar .flatpickr-current-month { font-size:.96rem; font-weight:700;
+            padding-top:4px; }
+        .foodapp-date-calendar .flatpickr-monthDropdown-months { font-weight:700 !important; }
+        .foodapp-date-calendar .flatpickr-months .flatpickr-prev-month,
+        .foodapp-date-calendar .flatpickr-months .flatpickr-next-month { padding:10px 12px; color:#475569; fill:#475569; }
+        .foodapp-date-calendar .flatpickr-weekday { color:#64748b; font-size:.78rem; font-weight:650; }
+        .foodapp-date-calendar .flatpickr-day { color:#334155; border-radius:50%; font-size:.82rem; }
+        .foodapp-date-calendar .flatpickr-day.selected,
+        .foodapp-date-calendar .flatpickr-day.startRange,
+        .foodapp-date-calendar .flatpickr-day.endRange { background:#319bd5; border-color:#319bd5;
+            box-shadow:none; color:#fff; }
+        .foodapp-date-calendar .flatpickr-day.inRange { background:rgba(49,155,213,.14);
+            border-color:rgba(49,155,213,.14); border-radius:0; box-shadow:-5px 0 0 rgba(49,155,213,.14),5px 0 0 rgba(49,155,213,.14); }
+        .foodapp-date-calendar .flatpickr-day.startRange:not(.endRange) { border-radius:50% 0 0 50%; }
+        .foodapp-date-calendar .flatpickr-day.endRange:not(.startRange) { border-radius:0 50% 50% 0; }
+        .foodapp-date-calendar .flatpickr-day.today:not(.selected) { border-color:#93c5fd; }
+        .foodapp-date-calendar .flatpickr-day:hover { background:#dbeafe; border-color:#dbeafe; color:#1e40af; }
+        .foodapp-date-calendar .flatpickr-day.selected:hover,
+        .foodapp-date-calendar .flatpickr-day.startRange:hover,
+        .foodapp-date-calendar .flatpickr-day.endRange:hover { background:#258ac2; color:#fff; }
+        .foodapp-date-calendar .flatpickr-day.flatpickr-disabled { color:#cbd5e1; }
+        @media(max-width:355px) {.flatpickr-calendar.foodapp-date-calendar { width:288px; }}
 
         /* Admin Sub-view Headers */
         .back-header {
@@ -2062,8 +2109,8 @@
             </div>
             <div class="dash-metric tone-blue">
               <span class="dash-icon"><i class="ph-fill ph-receipt"></i></span>
-              <div><p class="dash-label">Ticket promedio del día</p><h3 class="dash-value" id="dashTodayTicket">$0.00</h3>
-                <span class="dash-sub">Importe promedio por pedido</span></div>
+              <div><p class="dash-label">Tickets del día</p><h3 class="dash-value" id="dashTodayTicket">0</h3>
+                <span class="dash-sub">Pedidos completados o retirados hoy</span></div>
             </div>
             <div class="dash-metric tone-blue">
               <span class="dash-icon"><i class="ph-fill ph-calendar-check"></i></span>
@@ -2101,12 +2148,22 @@
                 <div><h3>Ventas por fecha</h3><p class="dash-panel-sub" id="dashRangeSubtitle">Totales diarios del período seleccionado</p></div>
               </div>
             </div>
-            <div class="dash-dates">
-              <div class="dash-date-field"><label for="dashboardDateFrom">Desde</label>
-                <input id="dashboardDateFrom" type="date" onchange="renderDashboard()"></div>
-              <div class="dash-date-field"><label for="dashboardDateTo">Hasta</label>
-                <input id="dashboardDateTo" type="date" onchange="renderDashboard()"></div>
+            <div class="dash-calendar-picker" id="dashboardPickerField">
+              <label for="dashboardDateRange">Selecciona un período</label>
+              <div class="dash-calendar-control">
+                <i class="ph ph-calendar-blank" aria-hidden="true"></i>
+                <input id="dashboardDateRange" type="text" placeholder="Seleccionar fechas" readonly autocomplete="off" aria-label="Seleccionar rango de fechas">
+                <i class="ph ph-caret-down" aria-hidden="true"></i>
+              </div>
             </div>
+            <div class="dash-dates" id="dashboardDateFallback" hidden>
+              <div class="dash-date-field"><label for="dashboardFallbackFrom">Desde</label>
+                <input id="dashboardFallbackFrom" type="date" onchange="dashboardFallbackChanged()"></div>
+              <div class="dash-date-field"><label for="dashboardFallbackTo">Hasta</label>
+                <input id="dashboardFallbackTo" type="date" onchange="dashboardFallbackChanged()"></div>
+            </div>
+            <input type="hidden" id="dashboardDateFrom">
+            <input type="hidden" id="dashboardDateTo">
             <div class="dash-quick">
               <button type="button" onclick="setDashboardRange('week')">7 días</button>
               <button type="button" onclick="setDashboardRange('month')">Este mes</button>
@@ -4143,7 +4200,7 @@
   const todayRevenue=sum(todayOrders);
   $('dashTodaySales').textContent=money(todayRevenue);
   $('dashTodayOrders').textContent=String(todayOrders.length);
-  $('dashTodayTicket').textContent=money(todayOrders.length?todayRevenue/todayOrders.length:0);
+  $('dashTodayTicket').textContent=String(todayOrders.filter(o=>o.status==='Completado'||o.status==='Retirado').length);
   $('dashWeekSales').textContent=money(sum(weekOrders));
   $('dashMonthSales').textContent=money(sum(monthOrders));
   $('dashTodaySalesSub').textContent=today;
@@ -4166,9 +4223,10 @@
   const to=$('dashboardDateTo');
   if(!from.value)from.value=monthStart;
   if(!to.value)to.value=today;
+  initDashboardCalendar();
   let start=from.value,end=to.value;
   if(start>end){const tmp=start;start=end;end=tmp;from.value=start;to.value=end;}
-  if(shift(start,366)<end){start=shift(end,-366);from.value=start;}
+  if(shift(start,366)<end){start=shift(end,-366);from.value=start;window.foodappRangeCalendar?.setDate([start,end],false,'Y-m-d');}
   const rangeOrders=validOrders.filter(o=>o.statDate>=start&&o.statDate<=end);
   const pretty=key=>fromUTC(key).toLocaleDateString('es-PA',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
   $('dashRangeSubtitle').textContent=pretty(start)+' – '+pretty(end)+' · '+rangeOrders.length+' pedidos';
@@ -4237,13 +4295,80 @@
       <span class="dash-rank-spend">${money(c.amount)}</span></div>`).join('')
     :'<p class="dash-empty">No hay clientes con pedidos en las fechas seleccionadas.</p>';
 }
+
+    function initDashboardCalendar() {
+      if (window.foodappRangeCalendar) return;
+      const from=document.getElementById('dashboardDateFrom');
+      const to=document.getElementById('dashboardDateTo');
+      const target=document.getElementById('dashboardDateRange');
+      if(!from||!to||!target)return;
+      const fallback=document.getElementById('dashboardDateFallback');
+      if(typeof flatpickr!=='function'){
+        if(fallback){fallback.hidden=false;
+          document.getElementById('dashboardFallbackFrom').value=from.value;
+          document.getElementById('dashboardFallbackTo').value=to.value;}
+        document.getElementById('dashboardPickerField').hidden=true;
+        return;
+      }
+      if(fallback)fallback.hidden=true;
+      document.getElementById('dashboardPickerField').hidden=false;
+      const panamaDay=(()=>{
+        const parts={};
+        const formatter=new Intl.DateTimeFormat('en-US',{timeZone:'America/Panama',year:'numeric',month:'2-digit',day:'2-digit'});
+        formatter.formatToParts(new Date()).forEach(p=>{if(['year','month','day'].includes(p.type))parts[p.type]=p.value;});
+        return parts.year+'-'+parts.month+'-'+parts.day;
+      })();
+      const locale=flatpickr.l10ns?.es || {firstDayOfWeek:1};
+      window.foodappRangeCalendar=flatpickr(target,{
+        mode:'range',
+        dateFormat:'Y-m-d',
+        altInput:true,
+        altFormat:'d M Y',
+        disableMobile:true,
+        maxDate:panamaDay,
+        defaultDate:[from.value,to.value],
+        locale:Object.assign({},locale,{firstDayOfWeek:1,rangeSeparator:' al '}),
+        monthSelectorType:'dropdown',
+        nextArrow:'❯',prevArrow:'❮',
+        onReady:(_,__,picker)=>picker.calendarContainer.classList.add('foodapp-date-calendar'),
+        onChange:(dates,__,picker)=>{
+          if(dates.length===2){
+            from.value=picker.formatDate(dates[0],'Y-m-d');
+            to.value=picker.formatDate(dates[1],'Y-m-d');
+            renderDashboard();
+          }
+        },
+        onClose:(dates,__,picker)=>{
+          if(dates.length===1){
+            const chosen=picker.formatDate(dates[0],'Y-m-d');
+            from.value=chosen;to.value=chosen;
+            picker.setDate([chosen,chosen],false,'Y-m-d');
+            renderDashboard();
+          }
+        }
+      });
+    }
+    function dashboardFallbackChanged(){
+      const from=document.getElementById('dashboardFallbackFrom');
+      const to=document.getElementById('dashboardFallbackTo');
+      if(!from||!to)return;
+      document.getElementById('dashboardDateFrom').value=from.value;
+      document.getElementById('dashboardDateTo').value=to.value;
+      renderDashboard();
+    }
     function setDashboardRange(preset){
   const dt = new Intl.DateTimeFormat('en-US',{timeZone:'America/Panama',year:'numeric',month:'2-digit',day:'2-digit'});
   const ps={};for(const part of dt.formatToParts(new Date()))if(['year','month','day'].includes(part.type))ps[part.type]=part.value;
   const today=ps.year+'-'+ps.month+'-'+ps.day;
   const offset=days=>{const x=new Date(today+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+days);return x.toISOString().slice(0,10);};
-  document.getElementById('dashboardDateFrom').value=preset==='month'?today.slice(0,7)+'-01':offset(preset==='week'?-6:-29);
+  const start=preset==='month'?today.slice(0,7)+'-01':offset(preset==='week'?-6:-29);
+  document.getElementById('dashboardDateFrom').value=start;
   document.getElementById('dashboardDateTo').value=today;
+  if(window.foodappRangeCalendar)window.foodappRangeCalendar.setDate([start,today],false,'Y-m-d');
+  else {
+    const a=document.getElementById('dashboardFallbackFrom'),b=document.getElementById('dashboardFallbackTo');
+    if(a)a.value=start;if(b)b.value=today;
+  }
   renderDashboard();
 }
 
@@ -4449,7 +4574,7 @@
     init();
 
 </script>
-<script src="./pwa.js?v=20261009-7" defer></script>
-<script src="./push-notifications.js?v=20261009-7" defer></script>
+<script src="./pwa.js?v=20261009-8" defer></script>
+<script src="./push-notifications.js?v=20261009-8" defer></script>
 </body>
 </html>
