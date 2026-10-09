@@ -1,7 +1,7 @@
 /* FoodApp PWA: caché de la aplicación, no de pedidos ni de usuarios. */
 'use strict';
 
-const CACHE_VERSION = 'foodapp-20261009-v9';
+const CACHE_VERSION = 'foodapp-20261009-v10';
 const APP_CACHE = `foodapp-shell-${CACHE_VERSION}`;
 const CDN_CACHE = `foodapp-libs-${CACHE_VERSION}`;
 const CACHE_PREFIX = 'foodapp-';
