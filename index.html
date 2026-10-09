@@ -2589,7 +2589,7 @@
         for(let page=0;page<300;page++){
             const first=page*DASHBOARD_PAGE_SIZE;
             const {data,error}=await supabaseClient.from('orders')
-                .select('id,total,status,created_at,user_id,guest_device_id,customer_name,order_items(product_id,quantity,unit_price,product_name)')
+                .select('id,total,status,created_at,user_id,guest_device_id,customer_name,order_items(product_id,quantity,unit_price,product_name,size_label)')
                 .gte('created_at',dateUTC(from))
                 .lt('created_at',dateUTC(endExclusive))
                 .order('created_at',{ascending:true})
@@ -2601,7 +2601,7 @@
                     createdAt:o.created_at,userId:o.user_id,guestDeviceId:o.guest_device_id,
                     customerName:o.customer_name,
                     items:(o.order_items||[]).map(i=>({
-                        id:i.product_id,qty:i.quantity,name:i.product_name,price:Number(i.unit_price)||0
+                        id:i.product_id,qty:i.quantity,name:i.product_name,sizeLabel:i.size_label||null,price:Number(i.unit_price)||0
                     }))
                 });
             }
@@ -2722,7 +2722,7 @@
                 .from('orders')
                 .select(`
                     id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
-                    order_items ( product_id, quantity, unit_price, product_name )
+                    order_items ( product_id, quantity, unit_price, product_name, size_label )
                 `)
                 .neq('status', 'Retirado')
                 .order('created_at', { ascending: false });
@@ -2746,6 +2746,7 @@
                     items: o.order_items.map(i => ({
                         id: i.product_id,
                         name: i.product_name,
+                        sizeLabel: i.size_label || null,
                         price: parseFloat(i.unit_price),
                         qty: i.quantity
                     }))
@@ -2806,7 +2807,7 @@
                 .from('orders')
                 .select(`
                     id, total, status, process_start_time, created_at, user_id, guest_device_id, customer_name,
-                    order_items ( product_id, quantity, unit_price, product_name )
+                    order_items ( product_id, quantity, unit_price, product_name, size_label )
                 `)
                 .neq('status', 'Retirado')
                 .order('created_at', { ascending: false });
@@ -2825,6 +2826,7 @@
                     items: o.order_items.map(i => ({
                         id: i.product_id,
                         name: i.product_name,
+                        sizeLabel: i.size_label || null,
                         price: parseFloat(i.unit_price),
                         qty: i.quantity
                     }))
@@ -4067,11 +4069,11 @@
         }
     }
 
-    function updateCartQty(id, delta) {
-        const item = cart.find(i => i.id === id);
+    function updateCartQty(index, delta) {
+        const item = cart[index];
         if(!item) return;
         item.qty += delta;
-        if(item.qty <= 0) cart = cart.filter(i => i.id !== id);
+        if(item.qty <= 0) cart.splice(index,1);
         
         saveState();
         updateCartBadge();
@@ -4109,17 +4111,18 @@
         emptyState.style.display = 'none';
         summary.style.display = 'block';
 
-        container.innerHTML = cart.map(item => `
+        container.innerHTML = cart.map((item,cartIndex) => `
             <div class="product-card" style="flex-direction:row; align-items:center; box-shadow:none;">
                 <img src="${item.image}" class="product-img" style="width:70px; height:70px; border-radius:12px;">
                 <div class="product-info" style="padding: 0.5rem">
-                    <div class="product-name" style="font-size:0.9rem">${item.name}</div>
+                    <div class="product-name" style="font-size:0.9rem">${escapeCustomerHtml(item.name)}</div>
+                    ${item.sizeLabel ? '<span class="cart-size-label">Tamaño: '+escapeCustomerHtml(item.sizeLabel)+'</span>' : ''}
                     <div class="product-price">$${((parseFloat(item.price) || 0) * item.qty).toFixed(2)}</div>
                 </div>
                 <div class="cart-item-actions" style="padding-right: 1rem">
-                    <button class="cart-qty-btn" onclick="updateCartQty(${item.id}, -1)">-</button>
+                    <button class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, -1)">-</button>
                     <span style="font-weight:600; width:20px; text-align:center">${item.qty}</span>
-                    <button class="cart-qty-btn" onclick="updateCartQty(${item.id}, 1)">+</button>
+                    <button class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, 1)">+</button>
                 </div>
             </div>
         `).join('');
@@ -4165,7 +4168,8 @@
                 product_id: item.id,
                 quantity: item.qty,
                 unit_price: parseFloat(item.price) || 0,
-                product_name: item.name
+                product_name: item.name,
+                size_label: item.sizeLabel || null
             }));
             
             const { error: errItems } = await supabaseClient.from('order_items').insert(itemsData);
@@ -4877,7 +4881,7 @@
                         <div class="order-status ${statusClass}">${o.status}</div>
                     </div>
                     <div class="order-items">
-                        ${o.items.map(i => `<strong>${i.qty}x</strong> ${i.name}`).join('<br>')}
+                        ${o.items.map(i => `<strong>${i.qty}x</strong> ${escapeCustomerHtml(i.name)}${i.sizeLabel?' · '+escapeCustomerHtml(i.sizeLabel):''}`).join('<br>')}
                     </div>
                     <div style="font-weight: bold; margin-bottom: 0.5rem; color:var(--primary);">
                         Total: $${o.total.toFixed(2)}
@@ -4955,7 +4959,7 @@
                         </div>
                         <div class="order-status ${statusClass}">${o.status}</div>
                     </div>
-                    <div class="order-items">${o.items.map(i => `<strong>${i.qty}x</strong> ${i.name}`).join('<br>')}</div>
+                    <div class="order-items">${o.items.map(i => `<strong>${i.qty}x</strong> ${escapeCustomerHtml(i.name)}${i.sizeLabel?' · '+escapeCustomerHtml(i.sizeLabel):''}`).join('<br>')}</div>
                     <div style="font-weight: bold; margin-bottom: 0.5rem; color:var(--primary);">Total: $${o.total.toFixed(2)}</div>
                     <div style="width: 100%; background: var(--border); height: 6px; border-radius: 3px; margin-top: 15px; overflow: hidden; position: relative;">
                         <div style="width: ${progress}%; background: ${isReady ? '#22c55e' : 'var(--primary)'}; height: 100%; transition: width 0.5s ease;"></div>
