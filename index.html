@@ -3443,8 +3443,12 @@
         document.getElementById('productSizeDialogTitle').textContent=product.name+' · Elige tus tamaños';
         document.getElementById('productSizeQuantityList').innerHTML=sizes.map((item,index)=>{
             const price=sizePriceForProduct(product,item);
+            const priceCaption=price<item.price
+                ? '<s style="color:var(--text-muted);font-weight:500">$'+item.price.toFixed(2)+'</s> '+
+                  '<strong style="color:var(--primary)">$'+price.toFixed(2)+' · Oferta</strong>'
+                : '$'+price.toFixed(2);
             return '<div class="product-size-order-row"><div><strong>'+escapeCustomerHtml(item.name)+'</strong>'+
-                '<small>$'+price.toFixed(2)+'</small></div><div class="product-size-quantity">'+
+                '<small>'+priceCaption+'</small></div><div class="product-size-quantity">'+
                 '<button type="button" onclick="adjustProductSizeQty('+index+',-1)">−</button>'+
                 '<input type="number" min="0" max="99" step="1" inputmode="numeric" data-ordered-size="'+index+
                 '" data-size-name="'+escapeCustomerHtml(item.name)+'" value="0" oninput="updateProductSizeTotal()" aria-label="Cantidad '+escapeCustomerHtml(item.name)+'">'+
