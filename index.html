@@ -1736,6 +1736,11 @@
       .push-auth-buttons button { padding:11px 16px; border:0; border-radius:10px;
           font-weight:700; background:#e5e7eb; color:#111827; cursor:pointer; }
       .push-auth-buttons button[type=submit] { background:var(--primary); color:#fff; }
+
+      #guestNameDialog[hidden] { display:none !important; }
+      #guestNameDialog .guest-name-error { color:#b91c1c; font-size:.8rem; font-weight:600; }
+      .order-customer { font-size:.86rem; font-weight:700; margin:.4rem 0 .2rem; color:var(--text-main); display:flex; gap:.35rem; align-items:center; flex-wrap:wrap; }
+      .order-customer i { color:var(--primary); font-size:1rem; }
     </style>
 </head>
 <body>
@@ -1745,6 +1750,21 @@
     <div id="toast">Notificación</div>
 
     <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
+
+    <!-- Nombre completo del cliente invitado (sin crear cuenta). -->
+    <div id="guestNameDialog" class="push-auth-dialog" hidden>
+      <form id="guestNameForm" class="push-auth-panel" onsubmit="submitGuestName(event)">
+        <h3>¿A nombre de quién será el pedido? 🍔</h3>
+        <p>Escribe tu nombre completo para identificar tu pedido. No necesitas crear una cuenta.</p>
+        <label for="guestFullName">Nombre y apellido</label>
+        <input type="text" id="guestFullName" name="guestFullName" placeholder="Ej. María González" autocomplete="name" maxlength="100" minlength="5" required>
+        <p id="guestNameError" class="guest-name-error" role="alert" hidden>Escribe tu nombre y apellido para continuar.</p>
+        <div class="push-auth-buttons">
+          <button type="button" onclick="closeGuestNameDialog()">Cancelar</button>
+          <button type="submit">Continuar</button>
+        </div>
+      </form>
+    </div>
     <div id="pushCredentialsDialog" class="push-auth-dialog" hidden>
       <form id="pushCredentialsForm" class="push-auth-panel">
         <h3>Activar notificaciones 🔔</h3>
@@ -2402,6 +2422,10 @@
 
     // --- INICIALIZACIÓN ---
     function init() {
+        if (currentUser && !currentUser.id && !hasFullGuestName(currentUser.name)) {
+            currentUser = null;
+            localStorage.removeItem('foodapp_user');
+        }
         if(isDarkMode) document.body.classList.add('dark-mode');
         updateThemeIcon();
         
@@ -2618,12 +2642,47 @@
         }
     }
 
-    function loginAsGuest() {
-        currentUser = { id: null, role: 'user', email: 'cliente', name: 'Invitado' };
+
+    function normalizeCustomerName(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 100);
+    }
+    function hasFullGuestName(value) {
+        const name = normalizeCustomerName(value);
+        return name.length >= 5 && name.split(' ').filter(word => word.length >= 2).length >= 2;
+    }
+    function escapeCustomerHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
+    }
+    function customerNameForOrder(row) {
+        return normalizeCustomerName(row.customer_name) ||
+            (row.user_id ? (normalizeCustomerName(appUsers.find(u => u.id === row.user_id)?.name) || 'Cliente registrado') : 'Invitado sin identificar');
+    }
+    function closeGuestNameDialog() {
+        document.getElementById('guestNameDialog').hidden = true;
+        document.getElementById('guestNameError').hidden = true;
+    }
+    function submitGuestName(event) {
+        event.preventDefault();
+        const name = normalizeCustomerName(document.getElementById('guestFullName').value);
+        if (!hasFullGuestName(name)) {
+            document.getElementById('guestNameError').hidden = false;
+            document.getElementById('guestFullName').focus();
+            return;
+        }
+        closeGuestNameDialog();
+        currentUser = { id: null, role: 'user', email: 'cliente', name, isGuest: true };
         localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
-        showToast("Bienvenido a FoodApp");
+        showToast('¡Bienvenido, ' + name + '!');
         setupAndEnterApp();
         void window.FoodAppPush?.associateGuest();
+    }
+    function loginAsGuest() {
+        document.getElementById('guestFullName').value = '';
+        document.getElementById('guestNameError').hidden = true;
+        document.getElementById('guestNameDialog').hidden = false;
+        document.getElementById('guestFullName').focus();
     }
 
     function setupAndEnterApp() {
