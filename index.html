@@ -2307,7 +2307,9 @@
 
                 // Notificar si es un pedido nuevo (solo para Admin)
                 if (currentPending > previousPending && currentUser?.role === 'admin') {
-                    showToast("🔔 ¡Nuevo pedido recibido!");
+                    const recent = orders.find(o => o.status === 'Pendiente');
+                    const displayName = (recent?.customerName || 'Cliente').slice(0, 28);
+                    showToast('🔔 Nuevo pedido · ' + displayName);
                 }
 
                 // Refrescar las vistas que muestran pedidos
