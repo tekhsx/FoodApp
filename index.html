@@ -2546,6 +2546,7 @@
 
     let products = [];
     let cart = JSON.parse(localStorage.getItem('foodapp_cart')) || [];
+    let cartCheckoutInProgress = false;
     let orders = []; // Ahora iniciará vacío y se llenará desde Supabase
     let appUsers = JSON.parse(localStorage.getItem('foodapp_users')) || defaultUsers; 
     let currentUser = JSON.parse(localStorage.getItem('foodapp_user')) || null;
@@ -3388,6 +3389,12 @@
         const product=products.find(p=>p.id===choosingProductSizeId);
         const total=readSelectedProductSizes().reduce((sum,v)=>sum+v.qty*sizePriceForProduct(product,v.size),0);
         document.getElementById('productSizeSelectionTotal').textContent='$'+total.toFixed(2);
+        const count=readSelectedProductSizes().reduce((sum,item)=>sum+item.qty,0);
+        const button=document.getElementById('addSelectedSizesBtn');
+        if(button){
+            button.disabled=count===0;
+            button.textContent=count ? 'Agregar '+count+' al carrito · $'+total.toFixed(2) : 'Elige una cantidad con +';
+        }
     }
     function addSelectedProductSizes(){
         const raw=products.find(p=>p.id===choosingProductSizeId);
@@ -4119,14 +4126,33 @@
     }
 
     function updateCartQty(index, delta) {
-        const item = cart[index];
-        if(!item) return;
-        item.qty += delta;
-        if(item.qty <= 0) cart.splice(index,1);
-        
+        if(cartCheckoutInProgress)return showToast('Espera mientras se envía el pedido.');
+        const item=cart[index];
+        if(!item)return;
+        item.qty+=delta;
+        if(item.qty<=0)cart.splice(index,1);
         saveState();
         updateCartBadge();
         renderCart();
+    }
+    function removeCartItem(index){
+        if(cartCheckoutInProgress)return showToast('Espera mientras se envía el pedido.');
+        if(!Number.isInteger(index)||index<0||index>=cart.length)return;
+        cart.splice(index,1);
+        saveState();
+        updateCartBadge();
+        renderCart();
+        showToast('Producto eliminado del carrito');
+    }
+    function clearCart(){
+        if(cartCheckoutInProgress)return showToast('Espera mientras se envía el pedido.');
+        if(!cart.length)return;
+        if(!confirm('¿Cancelar la selección y eliminar todos los productos del carrito?'))return;
+        cart=[];
+        saveState();
+        updateCartBadge();
+        renderCart();
+        showToast('Carrito vacío. Puedes volver a elegir productos.');
     }
 
     function updateCartBadge() {
@@ -4160,27 +4186,36 @@
         emptyState.style.display = 'none';
         summary.style.display = 'block';
 
-        container.innerHTML = cart.map((item,cartIndex) => `
-            <div class="product-card" style="flex-direction:row; align-items:center; box-shadow:none;">
-                <img src="${item.image}" class="product-img" style="width:70px; height:70px; border-radius:12px;">
-                <div class="product-info" style="padding: 0.5rem">
-                    <div class="product-name" style="font-size:0.9rem">${escapeCustomerHtml(item.name)}</div>
-                    ${item.sizeLabel ? '<span class="cart-size-label">Tamaño: '+escapeCustomerHtml(item.sizeLabel)+'</span>' : ''}
-                    <div class="product-price">$${((parseFloat(item.price) || 0) * item.qty).toFixed(2)}</div>
+        container.innerHTML = cart.map((item,cartIndex) => {
+            const lineTotal=((Number(item.price)||0)*(Number(item.qty)||0)).toFixed(2);
+            const unitPrice=(Number(item.price)||0).toFixed(2);
+            return `
+            <article class="cart-product-row">
+                <img src="${escapeCustomerHtml(item.image||'')}" alt="" class="cart-product-photo" loading="lazy">
+                <div class="cart-product-details">
+                    <div class="product-name">${escapeCustomerHtml(item.name)}</div>
+                    ${item.sizeLabel?'<span class="cart-size-label">Tamaño: '+escapeCustomerHtml(item.sizeLabel)+'</span>':''}
+                    <div class="product-price">$${lineTotal} <small style="font-weight:500;font-size:.74rem;color:var(--text-muted)">( $${unitPrice} c/u )</small></div>
+                    <div class="cart-product-controls">
+                        <div class="cart-item-actions" aria-label="Cantidad de ${escapeCustomerHtml(item.name)}">
+                            <button type="button" class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, -1)" aria-label="Quitar una unidad">−</button>
+                            <span class="cart-quantity-label" aria-label="${item.qty} unidades">${item.qty}</span>
+                            <button type="button" class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, 1)" aria-label="Agregar una unidad">+</button>
+                        </div>
+                        <button type="button" class="cart-remove-btn" onclick="removeCartItem(${cartIndex})" aria-label="Eliminar ${escapeCustomerHtml(item.name)}${item.sizeLabel?' tamaño '+escapeCustomerHtml(item.sizeLabel):''} del carrito">
+                            <i class="ph ph-trash"></i> Eliminar
+                        </button>
+                    </div>
                 </div>
-                <div class="cart-item-actions" style="padding-right: 1rem">
-                    <button class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, -1)">-</button>
-                    <span style="font-weight:600; width:20px; text-align:center">${item.qty}</span>
-                    <button class="cart-qty-btn" onclick="updateCartQty(${cartIndex}, 1)">+</button>
-                </div>
-            </div>
-        `).join('');
+            </article>`;
+        }).join('');
 
         const subtotal = cart.reduce((sum, item) => sum + ((parseFloat(item.price) || 0) * item.qty), 0);
         document.getElementById('cartTotal').innerText = `$${subtotal.toFixed(2)}`; 
     }
 
     async function checkout() {
+        if(cartCheckoutInProgress)return;
         if(cart.length === 0) return;
         if (!currentUser) return showToast('Inicia sesión o continúa como invitado.');
         if (!currentUser.id && !hasFullGuestName(currentUser.name)) {
@@ -4188,6 +4223,7 @@
             return;
         }
         
+        cartCheckoutInProgress=true;
         const btn = document.querySelector('#cartSummary .checkout-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Procesando...';
@@ -4239,6 +4275,7 @@
             console.error("Checkout Error:", err);
             showToast("Hubo un error con el pedido. Intenta de nuevo.");
         } finally {
+            cartCheckoutInProgress=false;
             if(btn) { btn.disabled = false; btn.innerHTML = 'Confirmar Pedido'; }
         }
     }
