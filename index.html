@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="FoodApp">
     <link rel="manifest" href="./manifest.json">
+    <meta name="foodapp-version" content="2026.10.09.2">
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
     <link rel="icon" type="image/png" sizes="48x48" href="./icons/icon-48.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png">
@@ -1689,6 +1690,33 @@
             .tv-grid-swap-page, .tv-banner-sweep-track { will-change: auto; }
         }
         /* El navegador muestra Instalar solo cuando la instalación es posible. */
+
+        /* Aviso de nueva versión: no interrumpe el uso normal. */
+        #pwaUpdateNotice[hidden] { display: none !important; }
+        .pwa-update-notice {
+            position: absolute;
+            bottom: calc(76px + env(safe-area-inset-bottom));
+            left: 12px;
+            right: 12px;
+            z-index: 150;
+            padding: 14px;
+            background: var(--surface-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+        }
+        .pwa-update-head { display: flex; gap: 10px; align-items: start; }
+        .pwa-update-head i { color: var(--primary); font-size: 1.45rem; flex-shrink: 0; }
+        .pwa-update-head strong { display: block; font-size: 0.95rem; line-height: 1.25; }
+        .pwa-update-head p { margin: 3px 0 0; font-size: 0.79rem; line-height: 1.35; color: var(--text-muted); }
+        .pwa-update-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+        .pwa-update-actions button { border: 0; cursor: pointer; border-radius: 10px; padding: 10px 12px; font-size: 0.86rem; font-weight: 700; }
+        #pwaUpdateNow { background: var(--primary); color: #fff; flex: 1; }
+        #pwaUpdateNow:disabled { opacity: .65; cursor: wait; }
+        #pwaUpdateLater { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
+        @media (max-width: 360px) { .pwa-update-actions { gap: 6px; } .pwa-update-actions button { padding: 9px 8px; } }
         #pwaInstallBtn[hidden] { display: none !important; }
         .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
     </style>
@@ -1698,6 +1726,22 @@
 <div class="app-container">
     
     <div id="toast">Notificación</div>
+
+    <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
+    <div id="pwaUpdateNotice" class="pwa-update-notice" role="status" aria-live="polite" hidden>
+        <div class="pwa-update-head">
+            <i class="ph-fill ph-arrows-clockwise" aria-hidden="true"></i>
+            <div>
+                <strong>Nueva versión disponible</strong>
+                <p id="pwaUpdateMessage">Hay mejoras disponibles para FoodApp.</p>
+            </div>
+        </div>
+        <div class="pwa-update-actions">
+            <button type="button" id="pwaUpdateNow">Actualizar ahora</button>
+            <button type="button" id="pwaUpdateLater">Más tarde</button>
+        </div>
+    </div>
+
 
     <header>
         <div class="logo">
@@ -4043,6 +4087,6 @@
     init();
 
 </script>
-<script src="./pwa.js" defer></script>
+<script src="./pwa.js?v=20261009-2" defer></script>
 </body>
 </html>

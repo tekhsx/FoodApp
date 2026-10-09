@@ -1,7 +1,7 @@
 /* FoodApp PWA: caché de la aplicación, no de pedidos ni de usuarios. */
 'use strict';
 
-const CACHE_VERSION = 'foodapp-20261009-v1';
+const CACHE_VERSION = 'foodapp-20261009-v2';
 const APP_CACHE = `foodapp-shell-${CACHE_VERSION}`;
 const CDN_CACHE = `foodapp-libs-${CACHE_VERSION}`;
 const CACHE_PREFIX = 'foodapp-';
@@ -9,6 +9,7 @@ const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
+  './version.json',
   './pwa.js',
   './offline.html',
   './icons/icon.svg',
@@ -24,7 +25,8 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(APP_CACHE)
       .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+      // En una actualización, esperar la aprobación del usuario.
+      .then(() => { if (!self.registration.active) return self.skipWaiting(); })
   );
 });
 
@@ -36,6 +38,11 @@ self.addEventListener('activate', event => {
         .map(name => caches.delete(name))))
       .then(() => self.clients.claim())
   );
+});
+
+// Activar la nueva versión únicamente al tocar “Actualizar ahora”.
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
 });
 
 // Solo los recursos estáticos de estas CDN. Nunca guardar llamadas a Supabase.
@@ -66,6 +73,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
   if (!['http:', 'https:'].includes(url.protocol)) return;
 
+  // El control de versiones nunca se responde desde caché ni desde un SW obsoleto.
+  if (url.origin === self.location.origin && url.pathname.endsWith('/version.json')) return;
+
   // Los datos, imágenes y autenticación de Supabase siempre utilizan la red.
   if (url.hostname.endsWith('.supabase.co') || url.hostname.endsWith('.supabase.in')) return;
 
@@ -76,10 +86,13 @@ self.addEventListener('fetch', event => {
   }
 
   if (url.origin === self.location.origin) {
-    // Activos versionados se obtienen de la caché, pero la actualización del SW renueva la versión.
-    event.respondWith(
-      caches.match(req).then(cached => cached || networkFirst(req, APP_CACHE))
-    );
+    // El JavaScript de la PWA siempre busca primero la versión publicada.
+    // Las imágenes estáticas se conservan en caché para poder abrir la app offline.
+    if (url.pathname.endsWith('/pwa.js') || url.pathname.endsWith('/manifest.json')) {
+      event.respondWith(networkFirst(req, APP_CACHE));
+    } else {
+      event.respondWith(caches.match(req).then(cached => cached || networkFirst(req, APP_CACHE)));
+    }
     return;
   }
 
