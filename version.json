@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.09.5",
-  "message": "Pedidos identificados con nombre completo, incluso para clientes invitados."
+  "version": "2026.10.09.6",
+  "message": "Activación de notificaciones con consentimiento, sin volver a escribir contraseña."
 }
