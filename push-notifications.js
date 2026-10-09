@@ -194,8 +194,9 @@
     catch (error) { console.warn('No se pudo asociar el invitado:', error); }
   }
   function guestDeviceId() {
-    if (getIdentity()?.id || !supported || Notification.permission !== 'granted' ||
-      localStorage.getItem(bindingKey) !== 'guest') return null;
+    // Identificar los pedidos de invitado incluso antes de aceptar notificaciones.
+    // Una misma persona conserva sus pedidos en este navegador/dispositivo.
+    if (!getIdentity() || getIdentity().id) return null;
     return getDevice().deviceId;
   }
   async function disconnect() {
