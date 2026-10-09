@@ -4609,7 +4609,7 @@
                             'No disponible · Configúralo en Editar producto')+'</small></span></label>'+
                     '<input type="number" id="promo-size-price-'+product.id+'-'+index+
                         '" min="0" step="0.01" inputmode="decimal" placeholder="Promo $" '+
-                        'aria-label="Precio de promoción '+escapeCustomerHtml(name)+'" '+
+                        'aria-label="Precio de promoción '+escapeCustomerHtml(name)+'" oninput="refreshPromoSizePreview('+product.id+')" '+
                         (currentPrice?'value="'+currentPrice+'" ':'')+
                         (selected?'':'disabled')+'></div>';
             }).join('')+
@@ -4774,8 +4774,13 @@
                 throw new Error('Supabase no confirmó la activación.');
             if(sizes.length){
                 const persisted=getProductSizeOptions({sizeOptions:data[0].size_options});
-                if(!persisted.some(x=>x.promoPrice!==null))
-                    throw new Error('Supabase no devolvió los precios promocionales por tamaño.');
+                const savedMatches=update.size_options.every(expected=>{
+                    const actual=persisted.find(item=>item.name===expected.name);
+                    const expectedPromo=expected.promoPrice===undefined?null:expected.promoPrice;
+                    return actual && Number(actual.price)===Number(expected.price) &&
+                        (actual.promoPrice===null?null:Number(actual.promoPrice))===expectedPromo;
+                });
+                if(!savedMatches)throw new Error('Supabase no confirmó todos los descuentos. Inténtalo nuevamente.');
             }
             applySavedProductRow(data[0]);
             const p=products.find(item=>String(item.id)===String(id));
