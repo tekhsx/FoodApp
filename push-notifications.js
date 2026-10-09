@@ -72,17 +72,60 @@
     btn.innerHTML = active ? '<i class="ph-fill ph-bell-ringing" aria-hidden="true"></i>' :
       '<i class="ph ph-bell" aria-hidden="true"></i>';
   }
+  const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const isPushServiceError = error => /push service|registration failed|could not connect|AbortError/i.test(
+    String(error?.name || '') + ' ' + String(error?.message || error || ''));
+  function explainPushError(error) {
+    if (isPushServiceError(error)) {
+      return 'Chrome no pudo registrar este dispositivo en su servicio de notificaciones. Comprueba que no estés en modo incógnito, actualiza el navegador y prueba otra conexión (Wi-Fi o datos móviles). Si continúa, prueba Firefox o revisa los servicios de notificaciones del navegador. No es un error de contraseña.';
+    }
+    if (error?.name === 'NotAllowedError') return 'El navegador tiene bloqueadas las notificaciones para FoodApp. Autorízalas en los permisos del sitio e inténtalo nuevamente.';
+    if (error?.name === 'InvalidStateError') return 'La suscripción anterior del navegador no coincide con la configuración actual. Actualiza FoodApp y vuelve a intentarlo.';
+    return error?.message || 'No se pudo crear la suscripción. Vuelve a intentarlo.';
+  }
+  function showPushError(message) {
+    const field = document.getElementById('pushRegistrationError');
+    if (field) { field.textContent = message || ''; field.hidden = !message; }
+  }
+  async function getVapidKey() {
+    const { vapidPublicKey } = await request('config');
+    if (!vapidPublicKey) throw new Error('La clave pública VAPID aún no está disponible en Supabase.');
+    const key = publicKeyToUint8Array(vapidPublicKey);
+    if (key.length !== 65 || key[0] !== 4) throw new Error('La clave pública VAPID tiene un formato incorrecto.');
+    try { await crypto.subtle.importKey('raw', key, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']); }
+    catch { throw new Error('La clave pública VAPID no es válida; hay que revisarla en Supabase.'); }
+    return key;
+  }
+  async function subscribeBrowser(reg, key) {
+    try {
+      return await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    } catch (firstError) {
+      if (!isPushServiceError(firstError) || document.hidden) throw firstError;
+      // Solo un reintento ante un fallo temporal del servicio push (sin repetir permisos).
+      await pause(1500);
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return existing;
+      try { return await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }); }
+      catch (secondError) { console.warn('Servicio push rechazó también el segundo intento:', secondError); throw secondError; }
+    }
+  }
   async function bindSubscription(identity, password, existingOnly = false) {
     if (!supported || Notification.permission !== 'granted') return false;
     const reg = await swRegistration();
+    if (!reg.active) throw new Error('El servicio de FoodApp todavía se está instalando. Vuelve a intentarlo.');
     let sub = await reg.pushManager.getSubscription();
     if (!sub && existingOnly) return false;
-    if (!sub) {
-      const { vapidPublicKey } = await request('config');
-      if (!vapidPublicKey) throw new Error('Configura VAPID_PUBLIC_KEY en Supabase antes de activar notificaciones.');
-      sub = await reg.pushManager.subscribe({ userVisibleOnly: true,
-        applicationServerKey: publicKeyToUint8Array(vapidPublicKey) });
+    // Comprobar la misma clave para evitar mantener una suscripción antigua con VAPID diferente.
+    const key = await getVapidKey();
+    if (sub && sub.options?.applicationServerKey) {
+      const oldKey = new Uint8Array(sub.options.applicationServerKey);
+      const sameKey = oldKey.length === key.length && oldKey.every((value, i) => value === key[i]);
+      if (!sameKey) {
+        await sub.unsubscribe();
+        sub = null;
+      }
     }
+    if (!sub) sub = await subscribeBrowser(reg, key);
     const device = getDevice();
     const registeredUser = Boolean(identity?.id);
     await request('register', {
@@ -90,6 +133,7 @@
       ...(registeredUser ? { email: identity.email, password } : {}),
     });
     localStorage.setItem(bindingKey, accountLabel(identity));
+    showPushError('');
     refreshButton();
     return true;
   }
@@ -99,6 +143,7 @@
     if (!identity) return safeToast('Inicia sesión antes de activar notificaciones.');
     if (processing) return;
     processing = true; refreshButton();
+    showPushError('');
     try {
       // La petición de permiso se hace directamente desde el gesto del usuario.
       const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
@@ -124,13 +169,14 @@
     if (!identity?.id || !password) return;
     processing = true;
     refreshButton();
+    showPushError('');
     try {
       await bindSubscription(identity, password);
       dialog.hidden = true;
       safeToast('🔔 Recibirás notificaciones de tus pedidos.');
     } catch (err) {
       console.warn('Error registrando notificación:', err);
-      safeToast(err.message || 'No se pudo verificar la cuenta.');
+      showPushError(explainPushError(err));
     } finally { passwordInput.value = ''; processing = false; refreshButton(); }
   }
   async function associateAccount(email, password) {
@@ -172,7 +218,7 @@
   btn?.addEventListener('click', enable);
   form?.addEventListener('submit', credentialSubmit);
   cancel?.addEventListener('click', () => {
-    dialog.hidden = true; passwordInput.value = '';
+    dialog.hidden = true; passwordInput.value = ''; showPushError('');
   });
   navigator.serviceWorker?.addEventListener('message', event => {
     if (event.data?.type !== 'FOODAPP_PUSH_OPEN') return;
