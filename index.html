@@ -2558,14 +2558,18 @@
             return;
         }
         const owner=String(currentUser.id);
+        const required=dashboardRequestedCoverage();
         const cached=dashboardRestoreCache();
-        if(cached && !force){
+        const cacheCoversRange = !force && cached && cached.today===panamaTodayKey() &&
+            cached.expiresAt>Date.now() && cached.from<=required.from && cached.to>=required.to;
+        if(cacheCoversRange){
             renderDashboard();
-            dashboardShowStatus('Datos guardados en caché · '+new Date(cached.fetchedAt).toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'}));
-        }else dashboardShowStatus('Consultando ventas en Supabase…');
+            dashboardShowStatus('Datos en caché · '+new Date(cached.fetchedAt).toLocaleTimeString('es-PA',{hour:'2-digit',minute:'2-digit'}));
+            return;
+        }
+        dashboardShowStatus(cached&&!force?'Ampliando fechas del Resumen…':'Consultando ventas en Supabase…');
         dashboardLoadingPromise=(async()=>{
             try{
-                const required=dashboardRequestedCoverage();
                 let active=(!force&&cached&&cached.today===panamaTodayKey()&&cached.expiresAt>Date.now())
                     ?{...cached,rows:[...cached.rows]}:null;
                 if(!active){
