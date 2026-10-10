@@ -171,6 +171,7 @@
     $('adsFormTitle').textContent = 'Nueva publicidad';
     $('adsSaveBtn').textContent = 'Programar publicidad';
     $('adsAdTitle').value = '';
+    $('adsAdPrice').value = '';
     $('adsImageFile').value = '';
     revokePreviewUrl();
     $('adsImagePreview').hidden = true;
@@ -185,6 +186,7 @@
     $('adsFormTitle').textContent = 'Editar publicidad';
     $('adsSaveBtn').textContent = 'Guardar cambios';
     $('adsAdTitle').value = item.title;
+    $('adsAdPrice').value = item.price == null ? '' : Number(item.price).toFixed(2);
     $('adsStartsAt').value = localPanamaValue(item.starts_at);
     $('adsEndsAt').value = localPanamaValue(item.ends_at);
     $('adsImageFile').value = '';
@@ -225,10 +227,14 @@
   async function save() {
     if (!administratorPassword || !isAdmin()) return toast('Debes autorizar el panel.');
     const title = $('adsAdTitle').value.trim();
+    const rawPrice = $('adsAdPrice').value.trim();
+    const price = Number(rawPrice);
     const starts_at = enteredDate('adsStartsAt');
     const ends_at = enteredDate('adsEndsAt');
     const file = $('adsImageFile').files?.[0];
     if (!title || title.length > 80) return toast('Escribe un título de hasta 80 caracteres.');
+    if (!rawPrice || !Number.isFinite(price) || price <= 0 || price > 100000 || !/^\d+(?:\.\d{1,2})?$/.test(rawPrice))
+      return toast('Escribe un precio válido mayor a $0.00 (máximo dos decimales).');
     if (!starts_at || !ends_at || new Date(ends_at) <= new Date(starts_at))
       return toast('La fecha final debe ser posterior al inicio.');
     if (new Date(ends_at).getTime() <= Date.now())
@@ -242,7 +248,7 @@
       const image_data = file ? await compactImage(file) : previous.image_data;
       await rpc('save', {
         p_ad_id: editingId, p_title: title, p_image_data: image_data,
-        p_starts_at: starts_at, p_ends_at: ends_at
+        p_starts_at: starts_at, p_ends_at: ends_at, p_price: price
       });
       toast('Publicidad guardada y programada correctamente.');
       clearEditor();
@@ -289,6 +295,9 @@
       info.className = 'ads-list-info';
       const title = document.createElement('strong');
       title.textContent = ad.title;
+      const price = document.createElement('strong');
+      price.className = 'ads-item-price';
+      price.textContent = ad.price == null ? 'Precio pendiente' : '$' + Number(ad.price).toFixed(2);
       const status = document.createElement('span');
       const started = new Date(ad.starts_at).getTime() <= Date.now();
       status.className = 'ads-status' + (started ? ' live' : '');
@@ -306,7 +315,7 @@
       del.textContent = 'Eliminar';
       del.onclick = () => void remove(ad.id);
       actions.append(edit, del);
-      info.append(title, status, times, actions);
+      info.append(title, price, status, times, actions);
       card.append(image, info);
       list.append(card);
     }
