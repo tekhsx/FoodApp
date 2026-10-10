@@ -3385,6 +3385,9 @@
             url.searchParams.delete('foodapp_view');
             history.replaceState(null, '', url);
         }
+        // Si llegó desde una publicidad sin sesión, llevarlo al carrito
+        // inmediatamente después de iniciar sesión o dar su nombre.
+        if (window.FoodAppAds?.takeCartRedirect?.()) navigate('cart');
     }
 
     function logout() {
