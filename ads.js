@@ -22,7 +22,7 @@
     return new Date(d.getTime() - PANAMA_OFFSET_MS).toISOString().slice(0,16);
   }
   function defaultDates() {
-    const rounded = Math.ceil(Date.now() / 300000) * 300000;
+    const rounded = Math.floor(Date.now() / 60000) * 60000;
     $('adsStartsAt').value = localPanamaValue(new Date(rounded).toISOString());
     $('adsEndsAt').value = localPanamaValue(new Date(rounded + 86400000).toISOString());
   }
