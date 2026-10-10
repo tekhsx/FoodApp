@@ -11,7 +11,7 @@
   let pendingPreviewUrl = null;
   let queryInProgress = false;
   const lastAdKey='foodapp_ads_last_shown_id';
-  let newEntry=true, backgroundAt=0;
+  let newEntry=true, backgroundAt=0, redirectToCartAfterLogin=false;
 
   function isAdmin() { return typeof currentUser !== 'undefined' && currentUser?.role === 'admin'; }
   function adminEmail() { return isAdmin() ? currentUser.email : ''; }
@@ -113,8 +113,16 @@
         cart.push({id:'ad:'+data.id,advertisementId:data.id,name:data.title,
           image:ad.image_data,price:Number(data.price),qty:1});
       }
-      saveState();updateCartBadge();dismiss();navigate('cart');
-      toast('¡Promoción agregada al carrito!');
+      saveState();updateCartBadge();dismiss();
+      if(typeof currentUser==='undefined'||!currentUser){
+        redirectToCartAfterLogin=true;
+        navigate('login');
+        loginAsGuest();
+        toast('Promoción agregada. Indica tu nombre para continuar al carrito.');
+      } else {
+        navigate('cart');
+        toast('¡Promoción agregada al carrito!');
+      }
     } catch(error){
       console.warn('No se pudo agregar la promoción:',error);
       toast('No se pudo agregar la promoción. Intenta de nuevo.');
@@ -399,12 +407,18 @@
     administratorPassword = '';
     advertisements = [];
     editingId = null;
+    redirectToCartAfterLogin = false;
     const field = $('adsAdminPassword');
     if (field) field.value = '';
   }
   window.FoodAppAds = {
     adminOpened, setAdminPassword, clearPassword, unlock, previewFile,
     clearEditor, save, dismiss, orderAdvertisement, validateCartAdvertisements,
+    takeCartRedirect: () => {
+      const pending=redirectToCartAfterLogin;
+      redirectToCartAfterLogin=false;
+      return pending;
+    },
     refresh: refreshPublicAdvertisement
   };
   const unlockInput = $('adsAdminPassword');
@@ -423,7 +437,7 @@
   document.addEventListener('visibilitychange', () => {
     if(document.hidden)backgroundAt=Date.now();
     else {
-      if(backgroundAt&&Date.now()-backgroundAt>30000){newEntry=true;dismissedId=null;}
+      if(backgroundAt){newEntry=true;dismissedId=null;}
       void refreshPublicAdvertisement();
     }
   });
