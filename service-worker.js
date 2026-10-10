@@ -1,7 +1,7 @@
 /* tu'dale PWA: caché de la aplicación, no de pedidos ni de usuarios. */
 'use strict';
 
-const CACHE_VERSION = 'foodapp-20261009-v19';
+const CACHE_VERSION = 'foodapp-20261009-v20';
 const APP_CACHE = `foodapp-shell-${CACHE_VERSION}`;
 const CDN_CACHE = `foodapp-libs-${CACHE_VERSION}`;
 const CACHE_PREFIX = 'foodapp-';
@@ -11,6 +11,8 @@ const APP_SHELL = [
   './manifest.json',
   './version.json',
   './pwa.js',
+  './ads.js',
+  './ads.css',
   './push-notifications.js',
   './offline.html',
   './icons/tudale-logo.png',
@@ -88,7 +90,7 @@ self.addEventListener('fetch', event => {
   if (url.origin === self.location.origin) {
     // El JavaScript de la PWA siempre busca primero la versión publicada.
     // Las imágenes estáticas se conservan en caché para poder abrir la app offline.
-    if (url.pathname.endsWith('/pwa.js') || url.pathname.endsWith('/push-notifications.js') || url.pathname.endsWith('/manifest.json')) {
+    if (url.pathname.endsWith('/ads.js') || url.pathname.endsWith('/ads.css') || url.pathname.endsWith('/pwa.js') || url.pathname.endsWith('/push-notifications.js') || url.pathname.endsWith('/manifest.json')) {
       event.respondWith(networkFirst(req, APP_CACHE));
     } else {
       event.respondWith(caches.match(req).then(cached => cached || networkFirst(req, APP_CACHE)));
