@@ -44,7 +44,7 @@
 .ads-admin-card input{width:100%;box-sizing:border-box}
 .ads-admin-card .ads-date-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .ads-admin-card .ads-date-grid label{margin-top:7px}
-.ads-editor-preview {position:relative;margin-top:9px;border-radius:12px;overflow:hidden;background:var(--bg-color)}
+.ads-editor-preview {position:relative;margin-top:9px;border-radius:0;overflow:hidden;background:transparent}
 .ads-editor-preview img{display:block;width:100%;max-height:180px;object-fit:contain}
 .ads-help{font-size:.74rem!important;margin:7px 0 10px!important}
 .ads-toolbar {display:flex;gap:8px;align-items:center;margin-top:12px}
@@ -54,7 +54,7 @@
 .ads-admin-card .checkout-btn{margin:0;min-height:42px}
 .ads-list{margin:0 14px 20px;display:flex;flex-direction:column;gap:10px}
 .ads-list .ads-admin-card{margin:0;display:flex;gap:10px;align-items:center;padding:10px}
-.ads-list-photo{width:100px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0;background:var(--bg-color)}
+.ads-list-photo{width:100px;height:72px;object-fit:contain;border-radius:0;flex-shrink:0;background:transparent}
 .ads-list-info{flex:1;min-width:0}
 .ads-list-info strong{font-size:.89rem;display:block;overflow-wrap:anywhere}
 .ads-list-info small{font-size:.7rem;color:var(--text-muted);display:block;margin:3px 0}
