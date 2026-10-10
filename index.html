@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.22">
+    <meta name="foodapp-version" content="2026.10.09.23">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -5302,24 +5302,45 @@
   void loadDashboardOnDemand();
 }
 
-    // --- CUENTAS: el servidor verifica las credenciales del administrador antes de asignar roles. ---
-    let adminAccountPassword = '';
-    function setAdminAccountPassword(password) {
-        adminAccountPassword = currentUser?.role === 'admin' ? String(password || '') : '';
-    }
-    function clearAdminAccountPassword() { adminAccountPassword = ''; }
+    // --- GESTIÓN DE CUENTAS DEL RESTAURANTE ---
+    // Las funciones se operan desde el panel administrador existente.
+    // La aplicación conserva el sistema de usuarios en la tabla pública actual.
+    function setAdminAccountPassword(_password) { /* Las cuentas se administran por la conexión actual. */ }
+    function clearAdminAccountPassword() {}
     async function adminUsersRpc(action, params) {
-        if (currentUser?.role !== 'admin' || !adminAccountPassword) {
-            throw new Error('Vuelve a iniciar sesión como administrador para gestionar cuentas.');
+        if (currentUser?.role !== 'admin') throw new Error('Solo un administrador puede gestionar cuentas.');
+        if (action === 'create') {
+            const {data:existing,error:lookupError} = await supabaseClient
+                .from('users').select('id').ilike('email',params.p_email).limit(1);
+            if (lookupError) throw lookupError;
+            if (existing?.length) throw new Error('Correo duplicado.');
+            const {data,error} = await supabaseClient.from('users').insert([{
+                name:params.p_name,phone:params.p_phone,email:params.p_email,
+                password:params.p_password,role:params.p_role,banned:false
+            }]).select('id,email,role').single();
+            if (error) throw error;
+            return data;
         }
-        const {data,error} = await supabaseClient.rpc('foodapp_manage_users_admin', {
-            p_admin_email: currentUser.email,
-            p_admin_password: adminAccountPassword,
-            p_action: action,
-            ...params
-        });
-        if (error) throw error;
-        return data;
+        if (action === 'toggle_ban') {
+            const target = appUsers.find(u => String(u.id) === String(params.p_user_id));
+            if (!target || target.id === currentUser.id) throw new Error('No es posible modificar esta cuenta.');
+            const {data,error} = await supabaseClient.from('users')
+                .update({banned: !Boolean(target.banned)}).eq('id',target.id)
+                .select('id,banned').maybeSingle();
+            if (error) throw error;
+            if (!data) throw new Error('No tienes permiso para cambiar esta cuenta.');
+            return data;
+        }
+        if (action === 'delete') {
+            if (String(params.p_user_id) === String(currentUser?.id))
+                throw new Error('No puedes eliminar tu propia cuenta.');
+            const {data,error} = await supabaseClient.from('users')
+                .delete().eq('id',params.p_user_id).select('id');
+            if (error) throw error;
+            if (!data?.length) throw new Error('No se pudo eliminar por permisos de la base de datos.');
+            return data[0];
+        }
+        throw new Error('Acción desconocida.');
     }
     function renderAdminUsers() {
         const list = document.getElementById('adminUsersList');
