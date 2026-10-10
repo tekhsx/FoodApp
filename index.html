@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.21">
+    <meta name="foodapp-version" content="2026.10.09.22">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="./ads.css?v=20261009-21">
+    <link rel="stylesheet" href="./ads.css?v=20261009-22">
 <style>
         /* Variables y Tema */
         :root {
@@ -2013,6 +2013,25 @@
 .product-size-deal b{font-weight:850;color:var(--primary);font-size:.75rem}
 .admin-promo-details{font-size:.73rem;color:var(--primary);font-weight:750;margin-top:4px;line-height:1.4}
 
+
+/* Visor ampliado: imagen completa, ampliación 1x–4x, salida clara. */
+.product-img[role="button"]{cursor:zoom-in}
+.product-img[role="button"]:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}
+.product-image-dialog[hidden]{display:none!important}
+.product-image-dialog{position:fixed;inset:0;z-index:100010;background:rgba(7,10,17,.96);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.product-image-toolbar{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;display:flex;gap:10px;z-index:2}
+.product-image-toolbar button{width:44px;height:44px;border:0;border-radius:14px;background:#fff;color:#111;display:grid;place-items:center;font-size:1.45rem;cursor:pointer}
+.product-image-toolbar .product-image-close{background:var(--primary);color:white}
+.product-image-stage{width:100%;height:min(83vh,750px);overflow:auto;display:flex;align-items:center;justify-content:center}
+.product-image-stage img{max-width:95%;max-height:95%;width:auto;height:auto;object-fit:contain;transition:transform .18s ease;transform-origin:center}
+.product-image-caption{color:#fff;font-size:1rem;font-weight:700;text-align:center;padding:8px 20px}
+.main-ad-banner{padding:0;background:#171717;border:0;text-align:left;cursor:pointer}
+.banner.main-ad-banner::before{content:none}
+.main-ad-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.main-ad-title{position:absolute;bottom:0;left:0;right:0;padding:10px 16px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:white;font-size:.91rem;font-weight:800}
+.admin-role-label{display:block;margin-top:10px;color:var(--text-main);font-size:.88rem;font-weight:700}
+.user-role-badge{display:inline-block;color:var(--primary);background:rgba(239,68,68,.10);border-radius:8px;font-size:.72rem;padding:3px 7px}
+
     </style>
 </head>
 <body>
@@ -2047,6 +2066,20 @@
     <!-- La actualización es optativa: no se recarga la página sin tocar el botón. -->
 
     <!-- Nombre completo del cliente invitado (sin crear cuenta). -->
+
+
+    <!-- Imagen del menú ampliable: botón X para salir sin salir de la aplicación. -->
+    <div id="productImageDialog" class="product-image-dialog" hidden role="dialog" aria-modal="true" aria-label="Imagen del plato">
+        <div class="product-image-toolbar">
+            <button type="button" onclick="adjustProductImageZoom(-0.5)" aria-label="Alejar imagen"><i class="ph ph-minus"></i></button>
+            <button type="button" onclick="adjustProductImageZoom(0.5)" aria-label="Acercar imagen"><i class="ph ph-plus"></i></button>
+            <button class="product-image-close" type="button" onclick="closeProductImage()" aria-label="Cerrar imagen"><i class="ph ph-x"></i></button>
+        </div>
+        <div class="product-image-stage" onclick="if(event.target===this)closeProductImage()">
+            <img id="productImageFull" alt="" draggable="false" ondblclick="adjustProductImageZoom(1)" />
+        </div>
+        <p id="productImageCaption" class="product-image-caption"></p>
+    </div>
 
 <!-- Selector de tamaños: admite cantidades diferentes en una sola compra -->
 <div id="productSizeDialog" class="product-size-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="productSizeDialogTitle">
@@ -2285,13 +2318,13 @@
         <!-- ================= ADMIN: PUBLICIDAD DEL DÍA ================= -->
         <section id="view-admin-ads" class="view">
           <div class="back-header">
-            <button class="back-btn" type="button" onclick="navigate('admin')" aria-label="Volver a administración"><i class="ph ph-arrow-left"></i></button>
+            <button class="back-btn" type="button" onclick="navigate(currentUser?.role === 'publicidad' ? 'home' : 'admin')" aria-label="Volver"><i class="ph ph-arrow-left"></i></button>
             <h2>Publicidad del día</h2>
           </div>
           <div id="adsAdminUnlock" class="ads-admin-card">
-            <h3><i class="ph ph-lock-key"></i> Verificar administrador</h3>
-            <p>Confirma tu contraseña para programar anuncios. Solo es necesario al volver a abrir la aplicación.</p>
-            <label for="adsAdminPassword">Contraseña de administrador</label>
+            <h3><i class="ph ph-lock-key"></i> Verificar acceso a publicidad</h3>
+            <p>Confirma tu contraseña para programar anuncios. Disponible para administradores y personal de publicidad.</p>
+            <label for="adsAdminPassword">Contraseña de tu cuenta</label>
             <input id="adsAdminPassword" class="admin-input" type="password" autocomplete="current-password" placeholder="Tu contraseña">
             <button id="adsUnlockBtn" class="checkout-btn" type="button" onclick="window.FoodAppAds?.unlock()">Entrar a publicidad</button>
           </div>
@@ -2454,7 +2487,13 @@
                     <input type="text" id="adminNewUserName" class="admin-input" placeholder="Nombre completo">
                     <input type="tel" id="adminNewUserPhone" class="admin-input" placeholder="Número de celular">
                     <input type="email" id="adminNewUserEmail" class="admin-input" placeholder="Correo electrónico">
-                    <input type="text" id="adminNewUserPass" class="admin-input" placeholder="Contraseña temporal">
+                    <input type="password" id="adminNewUserPass" class="admin-input" placeholder="Contraseña temporal (mín. 6 caracteres)" minlength="6" autocomplete="new-password">
+                    <label for="adminNewUserRole" class="admin-role-label">Rol de la cuenta</label>
+                    <select id="adminNewUserRole" class="admin-input" aria-label="Rol de la cuenta">
+                        <option value="user">Usuario</option>
+                        <option value="publicidad">Publicidad</option>
+                        <option value="admin">Administrador</option>
+                    </select>
                     <button id="btnAdminRegisterUser" class="checkout-btn" style="padding: 0.75rem; margin-top: 1rem; font-size: 1rem;" onclick="adminAddNewUser()">+ Registrar Usuario</button>
                 </div>
 
@@ -2645,7 +2684,7 @@
                 <i class="ph-fill ph-bell-ringing" style="font-size: 0.8rem; animation: shakeBell 1s ease-in-out infinite;"></i>
             </div>
         </a>
-        <a class="nav-item" onclick="navigate('admin')" id="nav-admin">
+        <a class="nav-item" onclick="navigate(currentUser?.role === 'publicidad' ? 'admin-ads' : 'admin')" id="nav-admin">
             <i class="ph-fill ph-gear nav-icon"></i>
             <span>Admin</span>
         </a>
@@ -2660,7 +2699,7 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93emRwcG5vbW5kZ3JycG5ydm5yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDY2OTEsImV4cCI6MjA5NTcyMjY5MX0.l2PWR9F09JOFxpE_Er9gccpbxvIua12et9fZKckiYrc';
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    const categories = ["Todos", "Hamburguesas", "Pizzas", "Bebidas", "Postres", "Combos"];
+    // Categorías del menú derivadas exclusivamente de productos disponibles en la base de datos.
     
     // Sin contraseñas ni cuentas administrativas incrustadas en el HTML.
     const defaultUsers = [];
@@ -2952,11 +2991,11 @@
             }
 
             // 2. Obtener Usuarios
-            const { data: dbUsers, error: errUsers } = await supabaseClient.from('users').select('*');
+            const { data: dbUsers, error: errUsers } = await supabaseClient.from('users').select('id,name,phone,email,role,banned,created_at');
             if (dbUsers) {
                 appUsers = dbUsers.map(u => ({
                     id: u.id, name: u.name, phone: u.phone, email: u.email, createdAt: u.created_at,
-                    password: u.password, role: u.role, banned: u.banned
+                    role: u.role, banned: u.banned
                 }));
             }
 
@@ -3246,7 +3285,9 @@
                 
                 currentUser = { id: user.id, role: user.role, email: user.email, name: user.name };
                 localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
-                if (user.role === 'admin') window.FoodAppAds?.setAdminPassword(pass);
+                if (user.role === 'admin') setAdminAccountPassword(pass);
+                else clearAdminAccountPassword();
+                if (user.role === 'admin' || user.role === 'publicidad') window.FoodAppAds?.setAdminPassword(pass);
                 showToast(`Bienvenido ${user.name}`);
                 setupAndEnterApp();
                 void window.FoodAppPush?.associateAccount(email, pass);
@@ -3266,7 +3307,7 @@
         e.preventDefault();
         const name = document.getElementById('regName').value.trim();
         const phone = document.getElementById('regPhone').value.trim();
-        const email = document.getElementById('regEmail').value.trim();
+        const email = document.getElementById('regEmail').value.trim().toLowerCase();
         const pass = document.getElementById('regPassword').value.trim();
         const btn = document.querySelector('#registerForm button');
 
@@ -3274,8 +3315,10 @@
         btn.innerText = 'Creando cuenta...';
 
         try {
-            // Verificar si el correo ya existe en BD
-            const { data: existing } = await supabaseClient.from('users').select('id').eq('email', email);
+            // Solo el registro público puede crear usuarios normales.
+            const { data: existing, error: lookupError } = await supabaseClient
+                .from('users').select('id').ilike('email', email).limit(1);
+            if (lookupError) throw lookupError;
             if (existing && existing.length > 0) {
                 showToast("Este correo ya está registrado.");
                 return;
@@ -3363,7 +3406,9 @@
         const adminNav = document.getElementById('nav-admin');
         const logoutBtn = document.getElementById('logoutBtn');
         
-        if(currentUser?.role === 'admin') adminNav.style.display = 'flex';
+        if(currentUser?.role === 'admin' || currentUser?.role === 'publicidad') adminNav.style.display = 'flex';
+        const adminNavLabel = adminNav?.querySelector('span');
+        if (adminNavLabel) adminNavLabel.textContent = currentUser?.role === 'publicidad' ? 'Publicidad' : 'Admin';
         else adminNav.style.display = 'none';
         
         logoutBtn.style.display = 'inline-block';
@@ -3379,6 +3424,7 @@
         if (requestedView === 'admin-orders' && currentUser?.role === 'admin') navigate('admin-orders');
         else if (requestedView === 'my-orders') navigate('my-orders');
         else if(currentUser?.role === 'admin') navigate('admin');
+        else if(currentUser?.role === 'publicidad') navigate('admin-ads');
         else navigate('home');
         if (requestedView) {
             const url = new URL(location.href);
@@ -3393,6 +3439,7 @@
     function logout() {
         clearDashboardCacheOnLogout();
         window.FoodAppAds?.clearPassword();
+        clearAdminAccountPassword();
         operationalOrdersSynced=false;
         void window.FoodAppPush?.disconnect();
         currentUser = null;
@@ -3406,7 +3453,8 @@
     }
 
     function navigate(viewName) {
-        if(viewName.startsWith('admin') && currentUser?.role !== 'admin') {
+        if(viewName.startsWith('admin') && currentUser?.role !== 'admin'
+            && !(viewName === 'admin-ads' && currentUser?.role === 'publicidad')) {
             showToast("Acceso denegado");
             return;
         }
@@ -3429,7 +3477,7 @@
         if(viewName === 'menu') renderFullMenu();
         if(viewName === 'cart') renderCart();
         if(viewName === 'admin') renderAdmin();
-        if(viewName === 'home') renderHomeViews();
+        if(viewName === 'home') { renderHomeViews(); renderCarousel(); }
         if(viewName === 'my-orders') renderUserOrders();
         
         if(viewName === 'admin-stats') void loadDashboardOnDemand();
@@ -3612,13 +3660,47 @@
                 '<s>$'+size.price.toFixed(2)+'</s><b>$'+sizePriceForProduct(product,size).toFixed(2)+'</b></span>').join('')+'</div>';
     }
 
+
+    let productImageScale = 1;
+    let productImagePreviousFocus = null;
+    function openProductImage(event, productId) {
+        if (event) event.stopPropagation();
+        const product = products.find(p => p.id === productId);
+        if (!product || !product.image) return;
+        productImagePreviousFocus = document.activeElement;
+        productImageScale = 1;
+        const dialog = document.getElementById('productImageDialog');
+        const image = document.getElementById('productImageFull');
+        image.src = product.image;
+        image.alt = 'Imagen ampliada de ' + product.name;
+        image.style.transform = 'scale(1)';
+        document.getElementById('productImageCaption').textContent = product.name;
+        dialog.hidden = false;
+        dialog.querySelector('.product-image-close').focus();
+    }
+    function adjustProductImageZoom(delta) {
+        const dialog = document.getElementById('productImageDialog');
+        if (dialog.hidden) return;
+        productImageScale = Math.min(4, Math.max(1, productImageScale + delta));
+        document.getElementById('productImageFull').style.transform = 'scale(' + productImageScale + ')';
+    }
+    function closeProductImage() {
+        const dialog = document.getElementById('productImageDialog');
+        dialog.hidden = true;
+        document.getElementById('productImageFull').removeAttribute('src');
+        if (productImagePreviousFocus?.isConnected) productImagePreviousFocus.focus();
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !document.getElementById('productImageDialog').hidden) closeProductImage();
+    });
+
     function generateProductCard(p, context = '') {
         if (!p.active && !document.getElementById('view-admin').classList.contains('active')) return '';
         
         return `
             <div class="product-card" id="product-${context}-${p.id}">
                 ${p.promo ? '<div class="promo-badge">Promo</div>' : ''}
-                <img src="${p.image}" class="product-img" alt="${p.name}" loading="lazy">
+                <img src="${p.image}" class="product-img" alt="${escapeCustomerHtml(p.name)}" loading="lazy" role="button" tabindex="0" title="Tocar para ampliar imagen" onclick="openProductImage(event, ${p.id})" onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();openProductImage(event, ${p.id})}">
                 <div class="product-info">
                     <div class="product-name">${p.name}</div>
                     <div class="product-desc">${p.desc}</div>
@@ -3659,22 +3741,39 @@
 
     function renderCarousel() {
         const track = document.getElementById('carouselTrack');
-        const carouselItems = products.filter(p => p.active).map(getEffectiveProductData).slice(0, 5);
-        
-        if(carouselItems.length === 0) {
-            track.innerHTML = `<div class="banner banner-bg-1"><div class="banner-content"><h3>¡Bienvenidos!</h3></div></div>`;
-            return;
-        }
-
-        track.innerHTML = carouselItems.map(p => `
-            <div class="banner" style="background-image: url('${p.image}'); background-size: cover; background-position: center; cursor: pointer;" onclick="goToProduct(${p.id})">
-                <div class="banner-content">
-                    <span class="banner-subtitle">¡Recomendado!</span>
-                    <h3>${p.name}</h3>
-                    <span class="banner-price">$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+        const carouselItems = products.filter(p => p.active).map(getEffectiveProductData)
+            .sort((a,b) => Number(b.promo) - Number(a.promo) || Number(b.orders||0) - Number(a.orders||0))
+            .slice(0, 5);
+        track.innerHTML = carouselItems.length
+            ? carouselItems.map(p => `
+                <div class="banner" style="background-image: url('${p.image}'); background-size: cover; background-position: center; cursor: pointer;" onclick="goToProduct(${p.id})">
+                    <div class="banner-content">
+                        <span class="banner-subtitle">${p.promo ? '🔥 Promoción activa' : '¡Recomendado!'}</span>
+                        <h3>${escapeCustomerHtml(p.name)}</h3>
+                        <span class="banner-price">${getProductSizeOptions(p).length ? 'Desde ' : ''}$${(parseFloat(p.price) || 0).toFixed(2)}</span>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('')
+            : '<div class="banner banner-bg-1"><div class="banner-content"><h3>¡Bienvenidos!</h3></div></div>';
+        // Publicidad programada también en el banner principal, con imagen completa.
+        const ad = window.FoodAppAds?.getActiveAdvertisement?.();
+        if (ad?.image_data && Number(ad.price)>0) {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'banner main-ad-banner';
+            card.setAttribute('aria-label', 'Pedir promoción ' + ad.title);
+            card.addEventListener('click', () => window.FoodAppAds?.orderAdvertisement());
+            const picture = document.createElement('img');
+            picture.src = ad.image_data;
+            picture.alt = ad.title;
+            picture.className = 'main-ad-image';
+            const label = document.createElement('span');
+            label.className = 'main-ad-title';
+            label.textContent = ad.title + ' · $' + Number(ad.price).toFixed(2) + '  → Pedir';
+            card.append(picture,label);
+            track.prepend(card);
+        }
+        track.scrollLeft = 0;
     }
 
     // --- MENÚ DIGITAL TV: preferencias guardadas por dispositivo ---
@@ -4251,13 +4350,19 @@
     }
 
     function renderCategories() {
-        const catHtml = categories.map(c => `
-            <div class="category-chip ${currentCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">
-                ${c}
-            </div>
-        `).join('');
-        document.getElementById('homeCategories').innerHTML = catHtml;
-        document.getElementById('menuCategories').innerHTML = catHtml;
+        // No mostrar categorías ficticias, vacías ni sin artículos visibles.
+        const list = ['Todos', ...new Set(products
+            .filter(p => p.active && typeof p.category === 'string' && p.category.trim())
+            .map(p => p.category.trim()).filter(c => c.toLowerCase() !== 'todos'))];
+        if (!list.includes(currentCategory)) currentCategory = 'Todos';
+        const html = list.map(c => {
+            const encoded = encodeURIComponent(c).replace(/'/g, '%27');
+            return '<div class="category-chip ' + (currentCategory === c ? 'active' : '') +
+                '" onclick="setCategory(decodeURIComponent(\'' + encoded + '\'))">' +
+                escapeCustomerHtml(c) + '</div>';
+        }).join('');
+        document.getElementById('homeCategories').innerHTML = html;
+        document.getElementById('menuCategories').innerHTML = html;
     }
 
     function setCategory(cat) {
@@ -4270,7 +4375,7 @@
     function renderFullMenu(filterText = '') {
         let filtered = products.filter(p => p.active).map(getEffectiveProductData);
         
-        if(currentCategory !== "Todos") filtered = filtered.filter(p => p.category === currentCategory);
+        if(currentCategory !== "Todos") filtered = filtered.filter(p => String(p.category || "").trim() === currentCategory);
         if(filterText) filtered = filtered.filter(p => p.name.toLowerCase().includes(filterText.toLowerCase()));
 
         const grid = document.getElementById('fullMenuGrid');
@@ -5197,74 +5302,100 @@
   void loadDashboardOnDemand();
 }
 
-    // --- GESTIÓN DE USUARIOS A BASE DE DATOS (ADMIN) ---
+    // --- CUENTAS: el servidor verifica las credenciales del administrador antes de asignar roles. ---
+    let adminAccountPassword = '';
+    function setAdminAccountPassword(password) {
+        adminAccountPassword = currentUser?.role === 'admin' ? String(password || '') : '';
+    }
+    function clearAdminAccountPassword() { adminAccountPassword = ''; }
+    async function adminUsersRpc(action, params) {
+        if (currentUser?.role !== 'admin' || !adminAccountPassword) {
+            throw new Error('Vuelve a iniciar sesión como administrador para gestionar cuentas.');
+        }
+        const {data,error} = await supabaseClient.rpc('foodapp_manage_users_admin', {
+            p_admin_email: currentUser.email,
+            p_admin_password: adminAccountPassword,
+            p_action: action,
+            ...params
+        });
+        if (error) throw error;
+        return data;
+    }
     function renderAdminUsers() {
         const list = document.getElementById('adminUsersList');
-        list.innerHTML = appUsers.map(u => `
+        if (!appUsers.length) {
+            list.innerHTML = '<div class="empty-state"><p>No hay usuarios registrados.</p></div>';
+            return;
+        }
+        list.innerHTML = appUsers.map(u => {
+            const label = u.role === 'admin' ? 'Administrador' : u.role === 'publicidad' ? 'Publicidad' : 'Usuario';
+            return `
             <div class="admin-card" style="margin: 0 0 1rem 0; ${u.banned ? 'opacity: 0.6; border-left: 4px solid red;' : ''}">
                 <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 0.25rem;">
-                    <strong style="color:var(--text-main)">${u.name} ${u.role === 'admin' ? '<span style="color:var(--primary); font-size:0.75rem;">(Admin)</span>' : ''}</strong>
-                    ${u.banned ? '<span style="color:red; font-size:0.75rem; font-weight:bold;">Baneado</span>' : ''}
+                    <strong style="color:var(--text-main)">${escapeCustomerHtml(u.name || '')} <span class="user-role-badge">${label}</span></strong>
+                    ${u.banned ? '<span style="color:red; font-size:0.75rem; font-weight:bold;">Suspendido</span>' : ''}
                 </div>
                 <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 0.75rem;">
-                    ${u.email} <br> Cel: ${u.phone}
+                    ${escapeCustomerHtml(u.email || '')} <br> Cel: ${escapeCustomerHtml(u.phone || 'Sin registrar')}
                 </div>
                 <div style="display:flex; gap:0.5rem;">
-                    ${u.email !== 'tes@hsx.com' ? `
-                        <button class="btn-status" style="background-color: ${u.banned ? '#22c55e' : '#f59e0b'};" onclick="toggleBanUser('${u.id}', ${u.banned})">${u.banned ? 'Desbanear' : 'Banear'}</button>
+                    ${u.id !== currentUser?.id ? `
+                        <button class="btn-status" style="background-color: ${u.banned ? '#22c55e' : '#f59e0b'};" onclick="toggleBanUser('${u.id}', ${!!u.banned})">${u.banned ? 'Reactivar' : 'Suspender'}</button>
                         <button class="btn-status" style="background-color: #ef4444;" onclick="deleteUser('${u.id}')">Eliminar</button>
-                    ` : '<span style="font-size: 0.7rem; color: var(--text-muted);">Admin principal no modificable</span>'}
+                    ` : '<span style="font-size: 0.7rem; color: var(--text-muted);">Tu cuenta</span>'}
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
-
     async function adminAddNewUser() {
         const name = document.getElementById('adminNewUserName').value.trim();
         const phone = document.getElementById('adminNewUserPhone').value.trim();
-        const email = document.getElementById('adminNewUserEmail').value.trim();
-        const pass = document.getElementById('adminNewUserPass').value.trim();
+        const email = document.getElementById('adminNewUserEmail').value.trim().toLowerCase();
+        const pass = document.getElementById('adminNewUserPass').value;
+        const role = document.getElementById('adminNewUserRole').value;
         const btn = document.getElementById('btnAdminRegisterUser');
-
-        if(!name || !email || !pass) return showToast("Llene datos obligatorios");
-        btn.disabled = true; btn.innerText = 'Registrando...';
-
+        if (!name || !email || !pass) return showToast('Completa nombre, correo y contraseña.');
+        if (pass.length < 6) return showToast('La contraseña debe tener al menos 6 caracteres.');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Escribe un correo válido.');
+        if (!['user','admin','publicidad'].includes(role)) return showToast('Selecciona un rol válido.');
+        btn.disabled = true;
+        btn.textContent = 'Creando cuenta...';
         try {
-            const { error } = await supabaseClient.from('users').insert([{ name, phone, email, password: pass, role: 'user', banned: false }]);
-            if(error) throw error;
-            document.getElementById('adminNewUserName').value = '';
-            document.getElementById('adminNewUserPhone').value = '';
-            document.getElementById('adminNewUserEmail').value = '';
-            document.getElementById('adminNewUserPass').value = '';
+            await adminUsersRpc('create', {p_name:name,p_phone:phone,p_email:email,p_password:pass,p_role:role});
+            ['adminNewUserName','adminNewUserPhone','adminNewUserEmail','adminNewUserPass']
+                .forEach(id => document.getElementById(id).value = '');
+            document.getElementById('adminNewUserRole').value = 'user';
             await syncConSupabase();
-            showToast("Usuario registrado exitosamente");
-        } catch(e) {
-            console.error(e);
-            showToast("Error. El correo puede que ya exista.");
+            renderAdminUsers();
+            showToast('Cuenta creada: ' + (role === 'admin' ? 'Administrador' : role === 'publicidad' ? 'Publicidad' : 'Usuario'));
+        } catch(error) {
+            console.error('Error al registrar cuenta:', error);
+            const msg = String(error.message || '');
+            showToast(/duplicate|duplicado|unique/i.test(msg)
+                ? 'Este correo ya está registrado.' : 'No se pudo crear la cuenta: ' + msg.slice(0,110));
         } finally {
-            btn.disabled = false; btn.innerText = '+ Registrar Usuario';
+            btn.disabled = false;
+            btn.textContent = '+ Registrar Usuario';
         }
     }
-
     async function toggleBanUser(userId, currentBanStatus) {
         try {
-            const { error } = await supabaseClient.from('users').update({ banned: !currentBanStatus }).eq('id', userId);
-            if(error) throw error;
+            await adminUsersRpc('toggle_ban',{p_user_id:userId});
             await syncConSupabase();
-            showToast("Estado modificado");
-        } catch(e) { showToast("Error al banear"); }
+            renderAdminUsers();
+            showToast(currentBanStatus ? 'Cuenta reactivada.' : 'Cuenta suspendida.');
+        } catch(e) { console.error(e); showToast('No se pudo modificar la cuenta.'); }
     }
-
     async function deleteUser(userId) {
-        if(!await showAppConfirm('¿Eliminar este usuario permanentemente?',{
+        if (!await showAppConfirm('¿Eliminar este usuario permanentemente?',{
             title:'Eliminar usuario',confirmText:'Sí, eliminar',danger:true
         })) return;
         try {
-            const { error } = await supabaseClient.from('users').delete().eq('id', userId);
-            if(error) throw error;
+            await adminUsersRpc('delete',{p_user_id:userId});
             await syncConSupabase();
-            showToast("Usuario eliminado");
-        } catch(e) { showToast("Error al eliminar"); }
+            renderAdminUsers();
+            showToast('Usuario eliminado');
+        } catch(e) { console.error(e); showToast('No se pudo eliminar la cuenta. Puede tener pedidos relacionados.'); }
     }
 
     // --- FUNCIONES DE PEDIDOS Y ESTADOS CON SUPABASE ---
@@ -5402,7 +5533,7 @@
     init();
 
 </script>
-<script src="./ads.js?v=20261009-21"></script>
+<script src="./ads.js?v=20261009-22"></script>
 <script src="./pwa.js?v=20261009-17" defer></script>
 <script src="./push-notifications.js?v=20261009-17" defer></script>
 </body>
