@@ -46,10 +46,8 @@
       banner.hidden = true;
       return;
     }
-    if (publicAd?.id !== ad.id || $('adPublicImage').src !== ad.image_data) {
-      $('adPublicImage').src = ad.image_data;
-      $('adPublicTitle').textContent = ad.title;
-    }
+    $('adPublicImage').src = ad.image_data;
+    $('adPublicTitle').textContent = ad.title;
     banner.hidden = false;
   }
   async function refreshPublicAdvertisement() {
@@ -63,11 +61,21 @@
     try {
       const instant = new Date().toISOString();
       const { data, error } = await supabaseClient.from('foodapp_advertisements')
-        .select('id,title,image_data,starts_at,ends_at')
+        .select('id,title,starts_at,ends_at,updated_at')
         .lte('starts_at', instant).gt('ends_at', instant)
         .order('starts_at', { ascending: false }).limit(1);
       if (error) throw error;
-      publicAd = data?.[0] || null;
+      const latest = data?.[0] || null;
+      if (!latest) {
+        publicAd = null;
+      } else if (publicAd?.id !== latest.id || publicAd.updated_at !== latest.updated_at) {
+        const { data: imageRow, error: imageError } = await supabaseClient.from('foodapp_advertisements')
+          .select('image_data').eq('id', latest.id).single();
+        if (imageError) throw imageError;
+        publicAd = Object.assign({}, latest, { image_data: imageRow.image_data });
+      } else {
+        publicAd = Object.assign({}, publicAd, latest);
+      }
       showPublicAdvertisement(publicAd);
     } catch (error) {
       console.warn('Publicidad: no se pudo actualizar el banner.', error);
