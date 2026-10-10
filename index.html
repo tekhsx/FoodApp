@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.19">
+    <meta name="foodapp-version" content="2026.10.09.20">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -24,7 +24,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
+    <link rel="stylesheet" href="./ads.css?v=20261009-20">
+<style>
         /* Variables y Tema */
         :root {
             --bg-color: #f3f4f6;
@@ -2019,6 +2020,16 @@
 <div class="app-container">
     
     <div id="toast" role="status" aria-live="polite">Notificación</div>
+
+    <!-- Franja publicitaria al abrir la aplicación (sin ventanas del navegador). -->
+    <aside id="adPublicBanner" class="daily-ad-toast" hidden role="region" aria-label="Publicidad del día">
+      <div class="daily-ad-head">
+        <strong><i class="ph-fill ph-megaphone"></i> Promoción del día</strong>
+        <button type="button" class="daily-ad-dismiss" aria-label="Cerrar anuncio" onclick="window.FoodAppAds?.dismiss()"><i class="ph ph-x"></i></button>
+      </div>
+      <img id="adPublicImage" class="daily-ad-image" alt="Publicidad del día">
+      <div id="adPublicTitle" class="daily-ad-caption"></div>
+    </aside>
     <div id="appConfirmDialog" class="app-confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage" hidden onclick="if(event.target===this)resolveAppConfirm(false)">
         <div class="app-confirm-card" role="document">
             <div class="app-confirm-icon"><i class="ph ph-question"></i></div>
@@ -2256,6 +2267,10 @@
                     <i class="ph-fill ph-package"></i>
                     <span>Productos</span>
                 </div>
+                <div class="admin-menu-card" onclick="navigate('admin-ads')">
+                    <i class="ph-fill ph-megaphone"></i>
+                    <span>Publicidad</span>
+                </div>
                 <div class="admin-menu-card" onclick="navigate('admin-tv')">
                     <i class="ph-fill ph-monitor-play"></i>
                     <span>Pantalla TV</span>
@@ -2263,6 +2278,45 @@
             </div>
         </section>
 
+
+
+        <!-- ================= ADMIN: PUBLICIDAD DEL DÍA ================= -->
+        <section id="view-admin-ads" class="view">
+          <div class="back-header">
+            <button class="back-btn" type="button" onclick="navigate('admin')" aria-label="Volver a administración"><i class="ph ph-arrow-left"></i></button>
+            <h2>Publicidad del día</h2>
+          </div>
+          <div id="adsAdminUnlock" class="ads-admin-card">
+            <h3><i class="ph ph-lock-key"></i> Verificar administrador</h3>
+            <p>Confirma tu contraseña para programar anuncios. Solo es necesario al volver a abrir la aplicación.</p>
+            <label for="adsAdminPassword">Contraseña de administrador</label>
+            <input id="adsAdminPassword" class="admin-input" type="password" autocomplete="current-password" placeholder="Tu contraseña">
+            <button id="adsUnlockBtn" class="checkout-btn" type="button" onclick="window.FoodAppAds?.unlock()">Entrar a publicidad</button>
+          </div>
+          <div id="adsAdminContent" hidden>
+            <div class="ads-admin-card">
+              <h3 id="adsFormTitle">Nueva publicidad</h3>
+              <p>Sube la imagen que aparecerá como banner pequeño al abrir tu'dale. Se mostrará solo durante las fechas seleccionadas (hora de Panamá).</p>
+              <label for="adsAdTitle">Nombre de la promoción</label>
+              <input class="admin-input" id="adsAdTitle" type="text" maxlength="80" placeholder="Ej.: Combo especial de hoy">
+              <label for="adsImageFile">Imagen de publicidad</label>
+              <input class="admin-input" id="adsImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" onchange="window.FoodAppAds?.previewFile()">
+              <p class="ads-help">Puedes subir JPG, PNG o WebP (hasta 8 MB). La app optimiza la imagen automáticamente.</p>
+              <div class="ads-editor-preview"><img class="ad-preview" id="adsImagePreview" alt="Vista previa de la publicidad" hidden></div>
+              <div class="ads-date-grid">
+                <div><label for="adsStartsAt">Inicia (Panamá)</label><input class="admin-input" id="adsStartsAt" type="datetime-local" required></div>
+                <div><label for="adsEndsAt">Termina (Panamá)</label><input class="admin-input" id="adsEndsAt" type="datetime-local" required></div>
+              </div>
+              <div class="ads-error" id="adsManagerError" role="alert"></div>
+              <div class="ads-toolbar">
+                <button id="adsSaveBtn" class="checkout-btn" type="button" onclick="window.FoodAppAds?.save()">Programar publicidad</button>
+                <button class="ads-secondary" type="button" onclick="window.FoodAppAds?.clearEditor()">Limpiar</button>
+              </div>
+            </div>
+            <h3 class="section-title">Publicidades activas y programadas</h3>
+            <div id="adsCampaignList" class="ads-list" aria-live="polite"></div>
+          </div>
+        </section>
 
         <!-- ================= ADMIN: STATS ================= -->
         <section id="view-admin-stats" class="view dashboard-v2">
@@ -3187,6 +3241,7 @@
                 
                 currentUser = { id: user.id, role: user.role, email: user.email, name: user.name };
                 localStorage.setItem('foodapp_user', JSON.stringify(currentUser));
+                if (user.role === 'admin') window.FoodAppAds?.setAdminPassword(pass);
                 showToast(`Bienvenido ${user.name}`);
                 setupAndEnterApp();
                 void window.FoodAppPush?.associateAccount(email, pass);
@@ -3329,6 +3384,7 @@
 
     function logout() {
         clearDashboardCacheOnLogout();
+        window.FoodAppAds?.clearPassword();
         operationalOrdersSynced=false;
         void window.FoodAppPush?.disconnect();
         currentUser = null;
@@ -3371,7 +3427,8 @@
         if(viewName === 'admin-stats') void loadDashboardOnDemand();
         if(viewName === 'admin-orders') renderOrdersAdmin();
         if(viewName === 'admin-users') renderAdminUsers();
-        if(viewName === 'admin-products') renderAdminProducts(); 
+        if(viewName === 'admin-products') renderAdminProducts();
+        if(viewName === 'admin-ads') window.FoodAppAds?.adminOpened();
         if(viewName === 'admin-tv') { tvSlideIndex = 0; tvLayoutSlideIndex = 0; tvBannerIndex = 0; tvLastAdvanceAt = Date.now(); tvBannerLastAdvanceAt = Date.now(); tvMenuLastAdvanceAt = Date.now(); renderTvView(); } 
     }
 
@@ -5331,6 +5388,7 @@
     init();
 
 </script>
+<script src="./ads.js?v=20261009-20"></script>
 <script src="./pwa.js?v=20261009-17" defer></script>
 <script src="./push-notifications.js?v=20261009-17" defer></script>
 </body>
