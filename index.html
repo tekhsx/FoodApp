@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.20">
+    <meta name="foodapp-version" content="2026.10.09.21">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="./ads.css?v=20261009-20">
+    <link rel="stylesheet" href="./ads.css?v=20261009-21">
 <style>
         /* Variables y Tema */
         :root {
@@ -2021,14 +2021,16 @@
     
     <div id="toast" role="status" aria-live="polite">Notificación</div>
 
-    <!-- Franja publicitaria al abrir la aplicación (sin ventanas del navegador). -->
-    <aside id="adPublicBanner" class="daily-ad-toast" hidden role="region" aria-label="Publicidad del día">
-      <div class="daily-ad-head">
-        <strong><i class="ph-fill ph-megaphone"></i> Promoción del día</strong>
-        <button type="button" class="daily-ad-dismiss" aria-label="Cerrar anuncio" onclick="window.FoodAppAds?.dismiss()"><i class="ph ph-x"></i></button>
-      </div>
-      <img id="adPublicImage" class="daily-ad-image" alt="Publicidad del día">
-      <div id="adPublicTitle" class="daily-ad-caption"></div>
+    <!-- Publicidad clicable: imagen completa, precio y pedido sin salir de la app. -->
+    <aside id="adPublicBanner" class="daily-ad-toast" hidden role="region" aria-label="Promoción del día">
+      <button type="button" class="daily-ad-tap" onclick="window.FoodAppAds?.orderAdvertisement()" aria-label="Agregar esta promoción al carrito">
+        <img id="adPublicImage" class="daily-ad-image" alt="Imagen completa de la promoción">
+        <span class="daily-ad-caption">
+          <strong id="adPublicTitle"></strong>
+          <span id="adPublicPrice" class="daily-ad-price"></span>
+        </span>
+      </button>
+      <button type="button" class="daily-ad-dismiss" aria-label="Cerrar promoción" onclick="window.FoodAppAds?.dismiss()"><i class="ph ph-x"></i></button>
     </aside>
     <div id="appConfirmDialog" class="app-confirm-overlay" role="alertdialog" aria-modal="true" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage" hidden onclick="if(event.target===this)resolveAppConfirm(false)">
         <div class="app-confirm-card" role="document">
@@ -2299,6 +2301,9 @@
               <p>Sube la imagen que aparecerá como banner pequeño al abrir tu'dale. Se mostrará solo durante las fechas seleccionadas (hora de Panamá).</p>
               <label for="adsAdTitle">Nombre de la promoción</label>
               <input class="admin-input" id="adsAdTitle" type="text" maxlength="80" placeholder="Ej.: Combo especial de hoy">
+              <label for="adsAdPrice">Precio de la promoción ($)</label>
+              <input class="admin-input" id="adsAdPrice" type="number" min="0.01" max="100000" step="0.01" inputmode="decimal" placeholder="Ej.: 4.99" required>
+              <p class="ads-help">Este será el precio que verá el cliente y pagará al pedir desde el anuncio.</p>
               <label for="adsImageFile">Imagen de publicidad</label>
               <input class="admin-input" id="adsImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/*" onchange="window.FoodAppAds?.previewFile()">
               <p class="ads-help">Puedes subir JPG, PNG o WebP (hasta 8 MB). La app optimiza la imagen automáticamente.</p>
@@ -4424,6 +4429,11 @@
         }
         
         cartCheckoutInProgress=true;
+        // Confirmar precios y vigencia de promociones antes de crear la orden.
+        if (window.FoodAppAds?.validateCartAdvertisements) {
+            const adsOkay = await window.FoodAppAds.validateCartAdvertisements();
+            if (!adsOkay) { cartCheckoutInProgress=false; return; }
+        }
         const btn = document.querySelector('#cartSummary .checkout-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Procesando...';
@@ -4450,7 +4460,8 @@
             // 2. Crear Items de la orden
             const itemsData = cart.map(item => ({
                 order_id: dbOrderId,
-                product_id: item.id,
+                product_id: item.advertisementId ? null : item.id,
+                advertisement_id: item.advertisementId || null,
                 quantity: item.qty,
                 unit_price: parseFloat(item.price) || 0,
                 product_name: item.name,
@@ -5388,7 +5399,7 @@
     init();
 
 </script>
-<script src="./ads.js?v=20261009-20"></script>
+<script src="./ads.js?v=20261009-21"></script>
 <script src="./pwa.js?v=20261009-17" defer></script>
 <script src="./push-notifications.js?v=20261009-17" defer></script>
 </body>
