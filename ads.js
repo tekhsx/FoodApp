@@ -10,6 +10,8 @@
   let dismissedId = null;
   let pendingPreviewUrl = null;
   let queryInProgress = false;
+  const lastAdKey='foodapp_ads_last_shown_id';
+  let newEntry=true, backgroundAt=0;
 
   function isAdmin() { return typeof currentUser !== 'undefined' && currentUser?.role === 'admin'; }
   function adminEmail() { return isAdmin() ? currentUser.email : ''; }
@@ -46,43 +48,113 @@
       banner.hidden = true;
       return;
     }
-    $('adPublicImage').src = ad.image_data;
+    if ($('adPublicImage').src !== ad.image_data) $('adPublicImage').src = ad.image_data;
     $('adPublicTitle').textContent = ad.title;
+    $('adPublicPrice').textContent = Number(ad.price) > 0
+      ? 'Pedir por $'+Number(ad.price).toFixed(2)+' →' : 'Promoción sin precio';
     banner.hidden = false;
   }
+
   async function refreshPublicAdvertisement() {
-    const now = Date.now();
-    if (publicAd && now >= new Date(publicAd.ends_at).getTime()) {
-      publicAd = null;
-      $('adPublicBanner').hidden = true;
+    if(publicAd && new Date(publicAd.ends_at).getTime()<=Date.now()){
+      publicAd=null; $('adPublicBanner').hidden=true;
     }
-    if (queryInProgress || !navigator.onLine) return;
-    queryInProgress = true;
+    if(queryInProgress||!navigator.onLine)return;
+    queryInProgress=true;
     try {
-      const instant = new Date().toISOString();
-      const { data, error } = await supabaseClient.from('foodapp_advertisements')
-        .select('id,title,starts_at,ends_at,updated_at')
-        .lte('starts_at', instant).gt('ends_at', instant)
-        .order('starts_at', { ascending: false }).limit(1);
-      if (error) throw error;
-      const latest = data?.[0] || null;
-      if (!latest) {
-        publicAd = null;
-      } else if (publicAd?.id !== latest.id || publicAd.updated_at !== latest.updated_at) {
-        const { data: imageRow, error: imageError } = await supabaseClient.from('foodapp_advertisements')
-          .select('image_data').eq('id', latest.id).single();
-        if (imageError) throw imageError;
-        publicAd = Object.assign({}, latest, { image_data: imageRow.image_data });
-      } else {
-        publicAd = Object.assign({}, publicAd, latest);
+      const instant=new Date().toISOString();
+      const {data,error}=await supabaseClient.from('foodapp_advertisements')
+        .select('id,title,price,starts_at,ends_at,updated_at')
+        .lte('starts_at',instant).gt('ends_at',instant)
+        .order('starts_at',{ascending:true}).order('id',{ascending:true});
+      if(error)throw error;
+      const live=data||[];
+      if(!live.length){publicAd=null;$('adPublicBanner').hidden=true;return;}
+      let selected=live.find(ad=>ad.id===publicAd?.id);
+      if(newEntry||!selected){
+        const priorIndex=live.findIndex(ad=>ad.id===localStorage.getItem(lastAdKey));
+        selected=live[(priorIndex+1)%live.length];
+        if(live.length>1&&selected.id===publicAd?.id)
+          selected=live[(live.findIndex(ad=>ad.id===selected.id)+1)%live.length];
+        newEntry=false;
+        localStorage.setItem(lastAdKey,selected.id);
       }
+      if(publicAd?.id!==selected.id||publicAd.updated_at!==selected.updated_at){
+        const {data:picture,error:pictureError}=await supabaseClient
+          .from('foodapp_advertisements').select('image_data').eq('id',selected.id).single();
+        if(pictureError)throw pictureError;
+        publicAd={...selected,image_data:picture.image_data};
+      } else publicAd={...publicAd,...selected};
       showPublicAdvertisement(publicAd);
-    } catch (error) {
-      console.warn('Publicidad: no se pudo actualizar el banner.', error);
-    } finally {
-      queryInProgress = false;
+    } catch(error){console.warn('Publicidad: no se pudo actualizar el banner.',error);}
+    finally{queryInProgress=false;}
+  }
+
+  async function orderAdvertisement(){
+    const ad=publicAd;
+    if(!ad)return;
+    if(new Date(ad.starts_at).getTime()>Date.now()||new Date(ad.ends_at).getTime()<=Date.now()){
+      $('adPublicBanner').hidden=true;
+      return toast('Esta promoción ya finalizó.');
+    }
+    try {
+      const instant=new Date().toISOString();
+      const {data,error}=await supabaseClient.from('foodapp_advertisements')
+        .select('id,title,price').eq('id',ad.id)
+        .lte('starts_at',instant).gt('ends_at',instant).maybeSingle();
+      if(error)throw error;
+      if(!data||!(Number(data.price)>0))
+        return toast('Esta promoción no está disponible para pedidos.');
+      if(typeof cart==='undefined')throw new Error('El carrito no está disponible.');
+      const current=cart.find(item=>item.advertisementId===data.id);
+      if(current){
+        current.qty++;current.price=Number(data.price);current.name=data.title;
+      } else {
+        cart.push({id:'ad:'+data.id,advertisementId:data.id,name:data.title,
+          image:ad.image_data,price:Number(data.price),qty:1});
+      }
+      saveState();updateCartBadge();dismiss();navigate('cart');
+      toast('¡Promoción agregada al carrito!');
+    } catch(error){
+      console.warn('No se pudo agregar la promoción:',error);
+      toast('No se pudo agregar la promoción. Intenta de nuevo.');
     }
   }
+
+  async function validateCartAdvertisements(){
+    const campaignItems=cart.filter(item=>item.advertisementId);
+    if(!campaignItems.length)return true;
+    try {
+      const instant=new Date().toISOString();
+      const ids=[...new Set(campaignItems.map(item=>item.advertisementId))];
+      const {data,error}=await supabaseClient.from('foodapp_advertisements')
+        .select('id,title,price').in('id',ids)
+        .lte('starts_at',instant).gt('ends_at',instant);
+      if(error)throw error;
+      const active=new Map((data||[]).map(ad=>[ad.id,ad]));
+      let removed=false,adjusted=false;
+      for(let i=cart.length-1;i>=0;i--){
+        const item=cart[i];if(!item.advertisementId)continue;
+        const ad=active.get(item.advertisementId);
+        if(!ad||!(Number(ad.price)>0)){cart.splice(i,1);removed=true;}
+        else if(Number(item.price)!==Number(ad.price)||item.name!==ad.title){
+          item.price=Number(ad.price);item.name=ad.title;adjusted=true;
+        }
+      }
+      if(removed||adjusted){
+        saveState();updateCartBadge();renderCart();
+        toast(removed?'Promoción vencida retirada del carrito. Revisa tu pedido.':
+          'El precio de una promoción cambió. Revisa el total antes de confirmar.');
+        return false;
+      }
+      return true;
+    }catch(error){
+      console.warn('No fue posible verificar la promoción:',error);
+      toast('No se pudo verificar la vigencia de la promoción.');
+      return false;
+    }
+  }
+
   function dismiss() {
     if (publicAd) dismissedId = publicAd.id;
     $('adPublicBanner').hidden = true;
@@ -332,7 +404,8 @@
   }
   window.FoodAppAds = {
     adminOpened, setAdminPassword, clearPassword, unlock, previewFile,
-    clearEditor, save, dismiss, refresh: refreshPublicAdvertisement
+    clearEditor, save, dismiss, orderAdvertisement, validateCartAdvertisements,
+    refresh: refreshPublicAdvertisement
   };
   const unlockInput = $('adsAdminPassword');
   if (unlockInput) unlockInput.addEventListener('keydown', e => {
@@ -348,6 +421,10 @@
   }, 5000);
   setInterval(() => void refreshPublicAdvertisement(), 60000);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) void refreshPublicAdvertisement();
+    if(document.hidden)backgroundAt=Date.now();
+    else {
+      if(backgroundAt&&Date.now()-backgroundAt>30000){newEntry=true;dismissedId=null;}
+      void refreshPublicAdvertisement();
+    }
   });
 })();
