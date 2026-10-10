@@ -2,8 +2,8 @@
 .daily-ad-toast[hidden], .ad-preview[hidden], #adsAdminContent[hidden], #adsAdminUnlock[hidden] { display:none!important; }
 .daily-ad-toast {
   position:absolute;z-index:120;top:65px;left:12px;right:12px;max-width:452px;
-  margin:0 auto;border:0;border-radius:0;background:transparent;
-  box-shadow:0 13px 36px rgba(0,0,0,.22);overflow:visible;
+  margin:0 auto;border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;outline:0;overflow:visible;
   animation:dailyAdEnter .28s ease-out;
 }
 @keyframes dailyAdEnter {
@@ -12,24 +12,17 @@
 }
 .daily-ad-tap {
   display:block;box-sizing:border-box;width:100%;border:0;border-radius:0;
-  padding:0;margin:0;background:var(--surface-color);color:var(--text-main);
+  padding:0;margin:0;background:transparent!important;color:var(--text-main);
   text-align:left;cursor:pointer;overflow:hidden;appearance:none;
   font:inherit;-webkit-tap-highlight-color:transparent;
 }
 .daily-ad-tap:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
 .daily-ad-image {
-  display:block;width:100%;height:auto;max-height:45dvh;min-height:0;
+  display:block;width:100%;height:auto;max-height:55dvh;min-height:0;
   object-fit:contain;object-position:center;
   border:0;border-radius:0;margin:0;padding:0;background:transparent;
 }
-.daily-ad-caption {
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:6px 14px;min-height:45px;
-  padding:9px 12px;background:var(--surface-color);border:0;border-radius:0;
-  font-size:.81rem;color:var(--text-main);
-}
-.daily-ad-caption strong {overflow-wrap:anywhere;font-weight:800}
-.daily-ad-price {font-size:.84rem;color:var(--primary);font-weight:900;white-space:nowrap}
+/* La publicidad emergente no lleva título, precio, caja ni marcos: solo fotografía. */
 .daily-ad-dismiss {
   position:absolute;top:7px;right:7px;z-index:2;
   width:33px;height:33px;display:flex;align-items:center;justify-content:center;
