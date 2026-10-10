@@ -48,10 +48,11 @@
       banner.hidden = true;
       return;
     }
-    if ($('adPublicImage').src !== ad.image_data) $('adPublicImage').src = ad.image_data;
-    $('adPublicTitle').textContent = ad.title;
-    $('adPublicPrice').textContent = Number(ad.price) > 0
-      ? 'Pedir por $'+Number(ad.price).toFixed(2)+' →' : 'Promoción sin precio';
+    const image = $('adPublicImage');
+    if (image.src !== ad.image_data) image.src = ad.image_data;
+    image.alt = 'Publicidad: ' + ad.title;
+    const tap = banner.querySelector('.daily-ad-tap');
+    if (tap) tap.setAttribute('aria-label', 'Pedir ' + ad.title + ' por $' + Number(ad.price).toFixed(2));
     banner.hidden = false;
   }
 
