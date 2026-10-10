@@ -13,7 +13,7 @@
   const lastAdKey='foodapp_ads_last_shown_id';
   let newEntry=true, backgroundAt=0, redirectToCartAfterLogin=false;
 
-  function isAdmin() { return typeof currentUser !== 'undefined' && currentUser?.role === 'admin'; }
+  function isAdmin() { return typeof currentUser !== 'undefined' && ['admin','publicidad'].includes(currentUser?.role); }
   function adminEmail() { return isAdmin() ? currentUser.email : ''; }
   function errorText(message) {
     return message?.message || String(message || 'No se pudo completar la operación.');
@@ -58,6 +58,7 @@
   async function refreshPublicAdvertisement() {
     if(publicAd && new Date(publicAd.ends_at).getTime()<=Date.now()){
       publicAd=null; $('adPublicBanner').hidden=true;
+      if(typeof renderCarousel==='function')renderCarousel();
     }
     if(queryInProgress||!navigator.onLine)return;
     queryInProgress=true;
@@ -69,7 +70,7 @@
         .order('starts_at',{ascending:true}).order('id',{ascending:true});
       if(error)throw error;
       const live=data||[];
-      if(!live.length){publicAd=null;$('adPublicBanner').hidden=true;return;}
+      if(!live.length){const previouslyShown=!!publicAd;publicAd=null;$('adPublicBanner').hidden=true;if(previouslyShown&&typeof renderCarousel==='function')renderCarousel();return;}
       let selected=live.find(ad=>ad.id===publicAd?.id);
       if(newEntry||!selected){
         const priorIndex=live.findIndex(ad=>ad.id===localStorage.getItem(lastAdKey));
@@ -79,13 +80,15 @@
         newEntry=false;
         localStorage.setItem(lastAdKey,selected.id);
       }
-      if(publicAd?.id!==selected.id||publicAd.updated_at!==selected.updated_at){
+      const changed=publicAd?.id!==selected.id||publicAd.updated_at!==selected.updated_at;
+      if(changed){
         const {data:picture,error:pictureError}=await supabaseClient
           .from('foodapp_advertisements').select('image_data').eq('id',selected.id).single();
         if(pictureError)throw pictureError;
         publicAd={...selected,image_data:picture.image_data};
       } else publicAd={...publicAd,...selected};
       showPublicAdvertisement(publicAd);
+      if(changed && typeof renderCarousel==='function')renderCarousel();
     } catch(error){console.warn('Publicidad: no se pudo actualizar el banner.',error);}
     finally{queryInProgress=false;}
   }
@@ -419,6 +422,7 @@
       redirectToCartAfterLogin=false;
       return pending;
     },
+    getActiveAdvertisement: () => publicAd && new Date(publicAd.starts_at).getTime() <= Date.now() && new Date(publicAd.ends_at).getTime() > Date.now() ? publicAd : null,
     refresh: refreshPublicAdvertisement
   };
   const unlockInput = $('adsAdminPassword');
@@ -431,6 +435,7 @@
     if (publicAd && new Date(publicAd.ends_at).getTime() <= Date.now()) {
       publicAd = null;
       $('adPublicBanner').hidden = true;
+      if(typeof renderCarousel==='function')renderCarousel();
     }
   }, 5000);
   setInterval(() => void refreshPublicAdvertisement(), 60000);
