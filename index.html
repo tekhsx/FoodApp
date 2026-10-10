@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="tu'dale">
     <link rel="manifest" href="./manifest.json?v=20261009-13">
-    <meta name="foodapp-version" content="2026.10.09.23">
+    <meta name="foodapp-version" content="2026.10.09.24">
     <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png?v=20261009-13">
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=20261009-13">
     <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=20261009-13">
@@ -24,7 +24,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/es.js"></script>
     <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="./ads.css?v=20261009-22">
+    <link rel="stylesheet" href="./ads.css?v=20261009-24">
 <style>
         /* Variables y Tema */
         :root {
@@ -2014,7 +2014,7 @@
 .admin-promo-details{font-size:.73rem;color:var(--primary);font-weight:750;margin-top:4px;line-height:1.4}
 
 
-/* Visor ampliado: imagen completa, ampliación 1x–4x, salida clara. */
+/* Visor de imagen completa, con botón único de cierre. */
 .product-img[role="button"]{cursor:zoom-in}
 .product-img[role="button"]:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}
 .product-image-dialog[hidden]{display:none!important}
@@ -2023,12 +2023,25 @@
 .product-image-toolbar button{width:44px;height:44px;border:0;border-radius:14px;background:#fff;color:#111;display:grid;place-items:center;font-size:1.45rem;cursor:pointer}
 .product-image-toolbar .product-image-close{background:var(--primary);color:white}
 .product-image-stage{width:100%;height:min(83vh,750px);overflow:auto;display:flex;align-items:center;justify-content:center}
-.product-image-stage img{max-width:95%;max-height:95%;width:auto;height:auto;object-fit:contain;transition:transform .18s ease;transform-origin:center}
+.product-image-stage img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 .product-image-caption{color:#fff;font-size:1rem;font-weight:700;text-align:center;padding:8px 20px}
 .main-ad-banner{padding:0;background:#171717;border:0;text-align:left;cursor:pointer}
 .banner.main-ad-banner::before{content:none}
 .main-ad-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .main-ad-title{position:absolute;bottom:0;left:0;right:0;padding:10px 16px;background:linear-gradient(transparent,rgba(0,0,0,.85));color:white;font-size:.91rem;font-weight:800}
+
+/* Botón de regreso visible en todas las vistas sin una flecha de regreso propia. */
+.header-left{display:flex;align-items:center;gap:6px;min-width:0}
+.app-header-back{display:flex;align-items:center;justify-content:center;flex:0 0 38px;
+  width:38px;height:38px;border:0;border-radius:11px;background:var(--bg-color);
+  color:var(--text-main);cursor:pointer;font-size:1.28rem;padding:0}
+.app-header-back[hidden]{display:none!important}
+.app-header-back:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+@media(max-width:390px){
+  .header-left{gap:3px}
+  .header-actions button{padding:.34rem}
+  .logo .tudale-logo-header{width:38px;height:38px}
+}
 .admin-role-label{display:block;margin-top:10px;color:var(--text-main);font-size:.88rem;font-weight:700}
 .user-role-badge{display:inline-block;color:var(--primary);background:rgba(239,68,68,.10);border-radius:8px;font-size:.72rem;padding:3px 7px}
 
@@ -2044,10 +2057,6 @@
     <aside id="adPublicBanner" class="daily-ad-toast" hidden role="region" aria-label="Promoción del día">
       <button type="button" class="daily-ad-tap" onclick="window.FoodAppAds?.orderAdvertisement()" aria-label="Agregar esta promoción al carrito">
         <img id="adPublicImage" class="daily-ad-image" alt="Imagen completa de la promoción">
-        <span class="daily-ad-caption">
-          <strong id="adPublicTitle"></strong>
-          <span id="adPublicPrice" class="daily-ad-price"></span>
-        </span>
       </button>
       <button type="button" class="daily-ad-dismiss" aria-label="Cerrar promoción" onclick="window.FoodAppAds?.dismiss()"><i class="ph ph-x"></i></button>
     </aside>
@@ -2071,12 +2080,10 @@
     <!-- Imagen del menú ampliable: botón X para salir sin salir de la aplicación. -->
     <div id="productImageDialog" class="product-image-dialog" hidden role="dialog" aria-modal="true" aria-label="Imagen del plato">
         <div class="product-image-toolbar">
-            <button type="button" onclick="adjustProductImageZoom(-0.5)" aria-label="Alejar imagen"><i class="ph ph-minus"></i></button>
-            <button type="button" onclick="adjustProductImageZoom(0.5)" aria-label="Acercar imagen"><i class="ph ph-plus"></i></button>
             <button class="product-image-close" type="button" onclick="closeProductImage()" aria-label="Cerrar imagen"><i class="ph ph-x"></i></button>
         </div>
         <div class="product-image-stage" onclick="if(event.target===this)closeProductImage()">
-            <img id="productImageFull" alt="" draggable="false" ondblclick="adjustProductImageZoom(1)" />
+            <img id="productImageFull" alt="" draggable="false" />
         </div>
         <p id="productImageCaption" class="product-image-caption"></p>
     </div>
@@ -2135,9 +2142,14 @@
 
 
     <header>
-        <div class="logo">
-            <img src="./icons/tudale-logo.png" class="tudale-logo-header" alt="Logo de tu'dale">
-            <span class="tudale-wordmark">tu'dale</span>
+        <div class="header-left">
+            <button type="button" id="appHeaderBack" class="app-header-back" onclick="appGoBack()" aria-label="Atrás" title="Atrás">
+                <i class="ph ph-arrow-left" aria-hidden="true"></i>
+            </button>
+            <div class="logo">
+                <img src="./icons/tudale-logo.png" class="tudale-logo-header" alt="Logo de tu'dale">
+                <span class="tudale-wordmark">tu'dale</span>
+            </div>
         </div>
         <div class="header-actions">
             <button id="pushEnableBtn" class="push-enable-btn" type="button" title="Activar notificaciones de pedidos" hidden aria-label="Activar notificaciones de pedidos"><i class="ph ph-bell" aria-hidden="true"></i></button>
@@ -2244,7 +2256,7 @@
         <!-- ================= CART VIEW ================= -->
         <section id="view-cart" class="view">
             <div class="cart-page-header">
-                <button type="button" class="cart-back-btn" onclick="navigate('menu')" aria-label="Volver al menú sin perder el carrito"><i class="ph ph-arrow-left"></i> Seguir comprando</button>
+                <button type="button" class="cart-back-btn" onclick="appGoBack()" aria-label="Regresar sin perder el carrito"><i class="ph ph-arrow-left"></i> Seguir comprando</button>
                 <h2 class="section-title">Mi carrito</h2>
             </div>
             <div id="cartItemsContainer" class="product-list">
@@ -2318,7 +2330,7 @@
         <!-- ================= ADMIN: PUBLICIDAD DEL DÍA ================= -->
         <section id="view-admin-ads" class="view">
           <div class="back-header">
-            <button class="back-btn" type="button" onclick="navigate(currentUser?.role === 'publicidad' ? 'home' : 'admin')" aria-label="Volver"><i class="ph ph-arrow-left"></i></button>
+            <button class="back-btn" type="button" onclick="appGoBack()" aria-label="Volver"><i class="ph ph-arrow-left"></i></button>
             <h2>Publicidad del día</h2>
           </div>
           <div id="adsAdminUnlock" class="ads-admin-card">
@@ -2359,7 +2371,7 @@
         <!-- ================= ADMIN: STATS ================= -->
         <section id="view-admin-stats" class="view dashboard-v2">
           <div class="back-header">
-            <button class="back-btn" onclick="navigate('admin')" aria-label="Volver al panel administrativo"><i class="ph ph-arrow-left"></i></button>
+            <button class="back-btn" onclick="appGoBack()" aria-label="Volver al panel administrativo"><i class="ph ph-arrow-left"></i></button>
             <h2>Resumen</h2>
           </div>
 
@@ -2467,7 +2479,7 @@
         <!-- ================= ADMIN: ORDERS ================= -->
         <section id="view-admin-orders" class="view">
             <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <button class="back-btn" onclick="appGoBack()"><i class="ph ph-arrow-left"></i></button>
                 <h2>Pedidos Activos</h2>
             </div>
             <div id="adminOrdersList" style="padding: 0 1rem;">
@@ -2478,7 +2490,7 @@
         <!-- ================= ADMIN: USERS ================= -->
         <section id="view-admin-users" class="view">
             <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <button class="back-btn" onclick="appGoBack()"><i class="ph ph-arrow-left"></i></button>
                 <h2>Usuarios</h2>
             </div>
             <div style="padding: 0 1rem;">
@@ -2507,7 +2519,7 @@
         <!-- ================= ADMIN: PRODUCTS MANAGER (NUEVO) ================= -->
         <section id="view-admin-products" class="view">
             <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <button class="back-btn" onclick="appGoBack()"><i class="ph ph-arrow-left"></i></button>
                 <h2>Productos</h2>
             </div>
             <div style="padding: 0 1rem;">
@@ -2534,7 +2546,7 @@
         <!-- ================= ADMIN: ADD/EDIT PRODUCT ================= -->
         <section id="view-admin-add" class="view">
             <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin-products')"><i class="ph ph-arrow-left"></i></button>
+                <button class="back-btn" onclick="appGoBack()"><i class="ph ph-arrow-left"></i></button>
                 <h2 id="adminAddHeaderTitle">Nuevo Producto</h2>
             </div>
             <div class="admin-card">
@@ -2573,7 +2585,7 @@
         <!-- ================= ADMIN: TV MODE ================= -->
         <section id="view-admin-tv" class="view">
             <div class="back-header">
-                <button class="back-btn" onclick="navigate('admin')"><i class="ph ph-arrow-left"></i></button>
+                <button class="back-btn" onclick="appGoBack()"><i class="ph ph-arrow-left"></i></button>
                 <h2 style="flex: 1;">Menú Digital (TV)</h2>
                 <!-- Iniciar la presentación en pantalla completa (Esc para regresar). -->
                 <button type="button" id="tvStartButton" class="checkout-btn tv-start-btn" onclick="startTvPresentation()">
@@ -3132,9 +3144,22 @@
         // Los productos y promociones se revisan cada 20 segundos (sin descargar imágenes).
         setInterval(pollProducts, 20000);
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                tvLastAdvanceAt = Date.now();
-                pollProducts();
+            if (document.hidden) {
+                appWasBackgrounded = true;
+                return;
+            }
+            if (appWasBackgrounded) {
+                appWasBackgrounded = false;
+                resetToHomeOnReturn();
+            }
+            tvLastAdvanceAt = Date.now();
+            pollProducts();
+        });
+        window.addEventListener('pagehide', () => { appWasBackgrounded = true; });
+        window.addEventListener('pageshow', event => {
+            if (event.persisted && appWasBackgrounded) {
+                appWasBackgrounded = false;
+                resetToHomeOnReturn();
             }
         });
 
@@ -3406,10 +3431,10 @@
         const adminNav = document.getElementById('nav-admin');
         const logoutBtn = document.getElementById('logoutBtn');
         
-        if(currentUser?.role === 'admin' || currentUser?.role === 'publicidad') adminNav.style.display = 'flex';
+        const canManage = currentUser?.role === 'admin' || currentUser?.role === 'publicidad';
+        adminNav.style.display = canManage ? 'flex' : 'none';
         const adminNavLabel = adminNav?.querySelector('span');
         if (adminNavLabel) adminNavLabel.textContent = currentUser?.role === 'publicidad' ? 'Publicidad' : 'Admin';
-        else adminNav.style.display = 'none';
         
         logoutBtn.style.display = 'inline-block';
         
@@ -3421,11 +3446,11 @@
         window.FoodAppPush?.refreshButton();
         
         const requestedView = new URLSearchParams(location.search).get('foodapp_view');
-        if (requestedView === 'admin-orders' && currentUser?.role === 'admin') navigate('admin-orders');
-        else if (requestedView === 'my-orders') navigate('my-orders');
-        else if(currentUser?.role === 'admin') navigate('admin');
-        else if(currentUser?.role === 'publicidad') navigate('admin-ads');
-        else navigate('home');
+        // La app siempre inicia en Inicio, incluso con una cuenta de administración.
+        // Los enlaces explícitos a pedidos siguen funcionando.
+        if (requestedView === 'admin-orders' && currentUser?.role === 'admin') navigate('admin-orders', {resetHistory:true});
+        else if (requestedView === 'my-orders') navigate('my-orders', {resetHistory:true});
+        else navigate('home', {resetHistory:true});
         if (requestedView) {
             const url = new URL(location.href);
             url.searchParams.delete('foodapp_view');
@@ -3447,24 +3472,78 @@
         document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('loginEmail').value = '';
         document.getElementById('loginPassword').value = '';
-        navigate('login');
+        navigate('login', {resetHistory:true});
         window.FoodAppPush?.refreshButton();
         showToast("Sesión cerrada");
     }
 
-    function navigate(viewName) {
+
+    // Historial interno de pantallas; permite regresar sin cerrar tu'dale.
+    const appViewHistory = [];
+    function appPreviousDestination(current) {
+        if (current === 'admin-add') return 'admin-products';
+        if (current?.startsWith('admin') && current !== 'admin') {
+            return currentUser?.role === 'publicidad' ? 'home' : 'admin';
+        }
+        if (current === 'cart') return 'menu';
+        if (current === 'menu' || current === 'my-orders' || current === 'admin') return 'home';
+        return currentUser ? 'home' : 'login';
+    }
+    function appGoBack() {
+        if (pendingAppConfirm) return resolveAppConfirm(false);
+        if (!document.getElementById('productImageDialog').hidden) return closeProductImage();
+        if (!document.getElementById('productSizeDialog').hidden) return closeProductSizeDialog();
+        if (!document.getElementById('guestNameDialog').hidden) return closeGuestNameDialog();
+        const current = document.querySelector('.view.active')?.id?.replace(/^view-/, '') || 'home';
+        // Al volver, no crear otra entrada que cause un bucle de navegación.
+        while (appViewHistory.length) {
+            const previous = appViewHistory.pop();
+            if (!previous || previous === current || !document.getElementById('view-' + previous)) continue;
+            if (previous === 'login' && currentUser) continue;
+            if (previous.startsWith('admin') && currentUser?.role !== 'admin'
+                && !(previous === 'admin-ads' && currentUser?.role === 'publicidad')) continue;
+            return navigate(previous, {fromBack:true});
+        }
+        const fallback = appPreviousDestination(current);
+        if (fallback !== current) navigate(fallback, {fromBack:true});
+        else if (current === 'login') toggleAuthMode('login');
+    }
+    function resetToHomeOnReturn() {
+        if (pendingAppConfirm) resolveAppConfirm(false);
+        if (!document.getElementById('productImageDialog').hidden) closeProductImage();
+        if (!document.getElementById('productSizeDialog').hidden) closeProductSizeDialog();
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        // No se pierde el carrito, los pedidos o la sesión al regresar de segundo plano.
+        navigate(currentUser ? 'home' : 'login', {resetHistory:true});
+    }
+    let appWasBackgrounded = false;
+
+    function navigate(viewName, options = {}) {
         if(viewName.startsWith('admin') && currentUser?.role !== 'admin'
             && !(viewName === 'admin-ads' && currentUser?.role === 'publicidad')) {
             showToast("Acceso denegado");
             return;
         }
 
+        const targetView = document.getElementById(`view-${viewName}`);
+        if (!targetView) return;
+        const previousView = document.querySelector('.view.active')?.id?.replace(/^view-/, '');
+        if (options.resetHistory) appViewHistory.length = 0;
+        else if (!options.fromBack && previousView && previousView !== viewName) {
+            if (previousView === 'login' && currentUser) appViewHistory.length = 0;
+            else {
+                appViewHistory.push(previousView);
+                if (appViewHistory.length > 25) appViewHistory.shift();
+            }
+        }
         const bottomNav = document.getElementById('bottomNav');
         if(bottomNav) bottomNav.style.display = viewName === 'login' ? 'none' : 'flex';
 
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        const targetView = document.getElementById(`view-${viewName}`);
-        if(targetView) targetView.classList.add('active');
+        targetView.classList.add('active');
+        // Las vistas administrativas y el carrito ya tienen un regreso propio.
+        const globalBack = document.getElementById('appHeaderBack');
+        if (globalBack) globalBack.hidden = !!targetView.querySelector('.back-header .back-btn, .cart-page-header .cart-back-btn');
         
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         const navId = viewName.startsWith('admin') ? 'nav-admin' : `nav-${viewName}`;
@@ -3661,28 +3740,19 @@
     }
 
 
-    let productImageScale = 1;
     let productImagePreviousFocus = null;
     function openProductImage(event, productId) {
         if (event) event.stopPropagation();
         const product = products.find(p => p.id === productId);
         if (!product || !product.image) return;
         productImagePreviousFocus = document.activeElement;
-        productImageScale = 1;
         const dialog = document.getElementById('productImageDialog');
         const image = document.getElementById('productImageFull');
         image.src = product.image;
         image.alt = 'Imagen ampliada de ' + product.name;
-        image.style.transform = 'scale(1)';
         document.getElementById('productImageCaption').textContent = product.name;
         dialog.hidden = false;
         dialog.querySelector('.product-image-close').focus();
-    }
-    function adjustProductImageZoom(delta) {
-        const dialog = document.getElementById('productImageDialog');
-        if (dialog.hidden) return;
-        productImageScale = Math.min(4, Math.max(1, productImageScale + delta));
-        document.getElementById('productImageFull').style.transform = 'scale(' + productImageScale + ')';
     }
     function closeProductImage() {
         const dialog = document.getElementById('productImageDialog');
@@ -5554,7 +5624,7 @@
     init();
 
 </script>
-<script src="./ads.js?v=20261009-22"></script>
+<script src="./ads.js?v=20261009-24"></script>
 <script src="./pwa.js?v=20261009-17" defer></script>
 <script src="./push-notifications.js?v=20261009-17" defer></script>
 </body>
