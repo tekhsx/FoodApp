@@ -1,0 +1,42 @@
+/* Publicidad programable tu'dale: integrada a la app, nunca en un popup del navegador. */
+.daily-ad-toast[hidden], .ad-preview[hidden], #adsAdminContent[hidden], #adsAdminUnlock[hidden] { display:none!important; }
+.daily-ad-toast { position:absolute;z-index:120;top:69px;left:12px;right:12px;max-width:452px;margin:0 auto;
+  border:1px solid rgba(255,255,255,.24);background:var(--surface-color);border-radius:17px;
+  box-shadow:0 14px 48px rgba(0,0,0,.28);overflow:hidden;animation:dailyAdEnter .28s ease-out; }
+@keyframes dailyAdEnter{from{opacity:0;transform:translateY(-16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.daily-ad-head { display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px; }
+.daily-ad-head strong { display:flex;align-items:center;gap:6px;font-size:.81rem;color:var(--primary);letter-spacing:.015em; }
+.daily-ad-dismiss { border:none;background:var(--bg-color);color:var(--text-main);width:30px;height:30px;
+ display:flex;align-items:center;justify-content:center;border-radius:9px;cursor:pointer;font-size:1.05rem; }
+.daily-ad-image {display:block;width:100%;max-height:172px;aspect-ratio:2.7/1;object-fit:cover;background:var(--bg-color)}
+.daily-ad-caption{font-size:.81rem;font-weight:750;padding:8px 13px 10px;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ads-admin-card {padding:16px;margin:12px 14px 15px;background:var(--surface-color);border-radius:16px;
+ border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+.ads-admin-card h3{font-size:1.02rem;margin:0 0 7px}
+.ads-admin-card p{font-size:.82rem;line-height:1.45;color:var(--text-muted);margin-bottom:12px}
+.ads-admin-card label{display:block;font-size:.79rem;font-weight:750;margin:13px 0 5px;color:var(--text-main)}
+.ads-admin-card input{width:100%;box-sizing:border-box}
+.ads-admin-card .ads-date-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ads-admin-card .ads-date-grid label{margin-top:7px}
+.ads-editor-preview {position:relative;margin-top:9px;border-radius:12px;overflow:hidden;background:var(--bg-color)}
+.ads-editor-preview img{display:block;width:100%;max-height:180px;object-fit:contain}
+.ads-help{font-size:.74rem!important;margin:7px 0 10px!important}
+.ads-toolbar {display:flex;gap:8px;align-items:center;margin-top:12px}
+.ads-toolbar button{flex:1;min-width:0}
+.ads-secondary{min-height:42px;padding:9px 11px;background:var(--bg-color);border:1px solid var(--border);
+ color:var(--text-main);border-radius:10px;font-weight:750;cursor:pointer}
+.ads-admin-card .checkout-btn{margin:0;min-height:42px}
+.ads-list{margin:0 14px 20px;display:flex;flex-direction:column;gap:10px}
+.ads-list .ads-admin-card{margin:0;display:flex;gap:10px;align-items:center;padding:10px}
+.ads-list-photo{width:100px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0;background:var(--bg-color)}
+.ads-list-info{flex:1;min-width:0}
+.ads-list-info strong{font-size:.89rem;display:block;overflow-wrap:anywhere}
+.ads-list-info small{font-size:.7rem;color:var(--text-muted);display:block;margin:3px 0}
+.ads-status{display:inline-block;font-weight:800;font-size:.69rem;padding:3px 7px;border-radius:99px;background:#dbeafe;color:#1d4ed8}
+.ads-status.live{background:#dcfce7;color:#166534}
+.ads-list-actions{display:flex;gap:6px;margin-top:7px}
+.ads-list-actions button{flex:1;padding:7px 5px;font-size:.77rem;border-radius:8px;border:1px solid var(--border);
+ background:var(--bg-color);color:var(--text-main);font-weight:700}
+.ads-list-actions button:last-child{color:#dc2626}
+.ads-error {font-size:.8rem;color:#b91c1c;min-height:18px;margin:8px 0}
+@media(max-width:375px){.daily-ad-toast{left:8px;right:8px}.ads-admin-card .ads-date-grid{grid-template-columns:1fr}.ads-list-photo{width:78px}}
